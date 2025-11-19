@@ -10,7 +10,8 @@ const BASE_URL = import.meta.env.BASE_URL || "/";
 export const EXCEL_URL = `${BASE_URL}data/LOGISTICA2026.xlsx`;
 
 // Nome exato da guia que vamos usar dentro do LOGISTICA2026.xlsx
-const SHEET_NAME = "Guia Frete Máquinas";
+// >>> A GUIA REAL SE CHAMA "FRETE MÁQUINAS"
+const SHEET_NAME = "FRETE MÁQUINAS";
 
 /* ---------------- helpers ---------------- */
 
@@ -178,33 +179,10 @@ export async function loadSolicitacoesFromExcel() {
     throw new Error(msg);
   }
 
-  // Lê a aba como matriz (linha/coluna)
-  const matrix = XLSX.utils.sheet_to_json(ws, {
-    header: 1,
+  // Usa a primeira linha (STATUS, FRETE, HR, KM, ...) como cabeçalho
+  const rows = XLSX.utils.sheet_to_json(ws, {
     defval: "",
     raw: true,
-  });
-
-  if (!matrix.length) {
-    console.info("[excelClient] Planilha vazia, nenhuma linha.");
-    return [];
-  }
-
-  // Usa SEMPRE a primeira linha como cabeçalho, podando espaços
-  const headerRow = matrix[0].map((c) => String(c || "").trim());
-  const dataRows = matrix.slice(1);
-
-  // Log rápido pra debug (primeiras linhas brutas)
-  console.debug("[excelClient] Cabeçalho detectado:", headerRow);
-  console.debug("[excelClient] Primeira linha de dados:", dataRows[0]);
-
-  const rows = dataRows.map((arr) => {
-    const obj = {};
-    headerRow.forEach((key, idx) => {
-      if (!key) return;
-      obj[key] = arr[idx];
-    });
-    return obj;
   });
 
   const out = rows
