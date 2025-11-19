@@ -3,8 +3,11 @@ import * as XLSX from "xlsx";
 
 /* ---------------- CONFIG: LOGISTICA2026.xlsx ---------------- */
 
+// Base da aplicação ("/" em dev, "/LOGMPA/" no GitHub Pages)
+const BASE_URL = import.meta.env.BASE_URL || "/";
+
 // Arquivo LOGISTICA2026.xlsx servido pelo próprio GitHub Pages
-export const EXCEL_URL = "https://logmpa.github.io/LOG/public/data/LOGISTICA2026.xlsx";
+export const EXCEL_URL = `${BASE_URL}data/LOGISTICA2026.xlsx`;
 
 // Nome exato da guia que vamos usar dentro do LOGISTICA2026.xlsx
 const SHEET_NAME = "Guia Frete Máquinas";
@@ -20,7 +23,14 @@ const READ_OPTS = {
 function toNumber(v) {
   if (v == null) return 0;
   if (typeof v === "number") return v;
-  return Number(String(v).replace(/[^0-9,-.]/g, "").replace(".", "").replace(",", ".")) || 0;
+  return (
+    Number(
+      String(v)
+        .replace(/[^0-9,-.]/g, "")
+        .replace(".", "")
+        .replace(",", ".")
+    ) || 0
+  );
 }
 
 function parseDateBR(v) {
@@ -145,7 +155,7 @@ function normalizeRow(row, idx) {
 /* ---------------- loader público ---------------- */
 
 export async function loadSolicitacoesFromExcel() {
-  console.info("[excelClient] Buscando BASE.xlsx em:", EXCEL_URL);
+  console.info("[excelClient] Buscando LOGISTICA2026.xlsx em:", EXCEL_URL);
 
   const resp = await fetch(EXCEL_URL, { cache: "no-store" });
   if (!resp.ok) {
@@ -163,7 +173,7 @@ export async function loadSolicitacoesFromExcel() {
     wb.Sheets[wb.SheetNames[0]];
 
   if (!ws) {
-    const msg = `Guia "${SHEET_NAME}" não encontrada no LOGISTICA2026.xlsx.`;
+    const msg = `Guia "${SHEET_NAME}" não encontrada na LOGISTICA2026.xlsx.`;
     console.error("[excelClient]", msg);
     throw new Error(msg);
   }
