@@ -1,0 +1,228 @@
+📘 Especificação do Painel Logística 2026 (versão humanamente compreensível)
+📦 Origem dos Dados
+
+Todos os dados vêm do arquivo LOGISTICA2026.xlsx.
+
+📊 DASHBOARD
+Agrupamentos por Status (coluna A)
+
+RECEBIDO
+
+PROGRAMADO
+
+EM ROTA
+
+CONCLUÍDO
+
+Versões (D) seguem junto do grupo original
+Ex.: RECEBIDO (D) entra no mesmo bloco de “RECEBIDO”.
+
+Abaixo de cada card deve aparecer:
+
+Lista de CHASSI (coluna D)
+
+Cliente/Nota (coluna J)
+
+Somente dos registros daquele status.
+
+Custos (Gráfico Regular vs Demonstração)
+
+Baseado na planilha Guia Frete Máquinas:
+
+CONCLUÍDO → Custo Normal
+
+CONCLUÍDO (D) → Demonstração
+Filtra por filial e soma r_prop + r_terc.
+
+📅 CALENDÁRIO
+1. Visão Semanal
+
+Puxa da Guia Frete Máquinas:
+
+Regras:
+
+Incluir todos os status, exceto SUSPENSO.
+
+Colunas utilizadas:
+
+Data → H
+
+Chassi (negrito) → D
+
+Cliente → J
+
+Localização (link) → P ou O (usar o que tiver link)
+
+2. Visão Mensal
+
+Também da guia Frete Máquinas:
+
+Regras:
+
+Somente:
+
+CONCLUÍDO
+
+CONCLUÍDO (D)
+
+Colunas:
+
+Data → H
+
+Chassi (negrito) → D
+
+Cliente → J
+
+📜 SOLICITAÇÕES
+Entra tudo que NÃO for:
+
+CONCLUIDO
+
+CONCLUIDO (D)
+
+Colunas usadas:
+
+Previsão → H
+
+Solicitante → K
+
+Cliente/Nota → J
+
+Chassi → G
+
+Está → L
+
+Vai → M
+
+Frete → B
+
+Status → A
+
+GEO → P ou O (usar o que tiver link)
+
+🟢 CONCLUÍDOS
+Entra apenas:
+
+CONCLUIDO
+
+CONCLUIDO (D)
+
+Colunas usadas (mesmas de Solicitações):
+
+Previsão → H
+
+Solicitante → K
+
+Cliente/Nota → J
+
+Chassi → G
+
+Está → L
+
+Vai → M
+
+Frete → B
+
+Status → A
+
+GEO → P ou O
+
+🎖️ DEMONSTRAÇÕES
+Entra qualquer status que contenha (D), como:
+
+RECEBIDO (D)
+
+PROGRAMADO (D)
+
+EM ROTA (D)
+
+CONCLUIDO (D)
+
+Colunas:
+
+Data → H
+
+Chassi (negrito) → D
+
+Cliente → J
+
+GEO / Localização → P ou O
+
+💰 CUSTOS
+
+Todos vêm da aba CUSTOS do Excel.
+
+1. Custos Máquinas
+TRANSPORTE MÁQUINAS - META VS REAL
+
+Cabeçalho: A11:G11
+
+Conteúdo: A12:G13
+
+CUSTO POR TIPO
+
+Cabeçalho: A17:D17
+
+Conteúdo: A18:D23
+
+CUSTO COM TERCEIROS
+
+Cabeçalho: A28:C28
+
+Conteúdo: A29:C36
+
+UTILIZAÇÃO DE MUNCK
+
+Cabeçalho: A46:B46
+
+Conteúdo: A47:B54
+
+2. Custos Peças
+COURIER POR LOJA
+
+Cabeçalho: D46:E46
+
+Conteúdo: D47:E54
+
+TRANSPORTADORA POR LOJA
+
+Cabeçalho: G46:H46
+
+Conteúdo: G47:H54
+
+CUSTO COURIER
+
+Cabeçalho: A61:B61
+
+Conteúdo: A62:B80
+
+CUSTO TRANSPORTADORA
+
+Cabeçalho: D61:E61
+
+Conteúdo: D62:E80
+
+3. Custos Frota
+Aproveitamento
+
+Cabeçalho: A90:B90
+
+Conteúdo: A91:B92
+
+Valor aproximado custo vs KM
+
+Cabeçalho: A85:B85
+
+Conteúdo: A86:B87
+
+Custos DAF 2026
+
+Cabeçalho: G60:H60
+
+Conteúdo: G61:H68
+
+Custos VW 2026
+
+Cabeçalho: G73:H73
+
+Conteúdo: G74:H82
