@@ -62,31 +62,35 @@ const MAP_CANON = new Map(CIDADES.map((c) => [NORM(c), c]));
 const canonCidade = (txt) => MAP_CANON.get(NORM(txt)) || null;
 
 /* ========= Cores ========= */
-const COR_TERC = "#F59E0B"; // Demonstração
-const COR_PROP = "#15803D"; // Normal
+// bloco Normal (verde claro)
+const COR_PROP = "#BBF7D0"; // green-200 vibe
+// bloco Demonstração (amarelo)
+const COR_TERC = "#FDE68A"; // amber-200
+// badge azul da quantidade
+const BADGE_BG = "#BFDBFE"; // blue-200
+const BADGE_TEXT = "#1D4ED8"; // blue-700
+// total em azul escuro
+const TOTAL_COLOR = "#1D4ED8"; // blue-700
 const GRID_LIGHT = "#E2E8F0";
-const BADGE_BG = "#065F46";
-const BADGE_TEXT = "#FFFFFF";
-const TOTAL_COLOR = "#022C22";
 
 /* ========= Labels custom ========= */
 function QtdBadge({ viewBox, value }) {
   if (value == null || !viewBox) return null;
   const { x, y, width } = viewBox;
-  const w = 24;
-  const h = 16;
+  const w = 40;
+  const h = 22;
   const cx = x + width / 2 - w / 2;
-  const cy = y - h - 2;
+  const cy = y - h - 8; // mais espaço
   return (
     <g>
-      <rect x={cx} y={cy} rx={3} ry={3} width={w} height={h} fill={BADGE_BG} />
+      <rect x={cx} y={cy} rx={6} ry={6} width={w} height={h} fill={BADGE_BG} />
       <text
         x={cx + w / 2}
         y={cy + h / 2 + 4}
         textAnchor="middle"
-        fontSize="10"
+        fontSize="11"
         fill={BADGE_TEXT}
-        fontWeight="600"
+        fontWeight="700"
       >
         {value}
       </text>
@@ -98,13 +102,13 @@ function TotalLabel({ viewBox, value }) {
   if (value == null || !viewBox) return null;
   const { x, y, width } = viewBox;
   const cx = x + width / 2;
-  const cy = y - 26;
+  const cy = y - 40; // sobe bem pra dar respiro
   return (
     <text
       x={cx}
       y={cy}
       textAnchor="middle"
-      fontSize="12"
+      fontSize="13"
       fontWeight="800"
       fill={TOTAL_COLOR}
     >
@@ -447,7 +451,8 @@ export default function PainelLogistica() {
           <ResponsiveContainer width="100%" height={380}>
             <BarChart
               data={dadosCidadesColuna}
-              margin={{ top: 48, right: 16, left: 0, bottom: 34 }}
+              margin={{ top: 80, right: 24, left: 0, bottom: 34 }}
+              barCategoryGap="25%"
             >
               <CartesianGrid strokeDasharray="3 3" stroke={GRID_LIGHT} />
               <XAxis dataKey="cidade" angle={-15} textAnchor="end" height={50} />
@@ -483,28 +488,40 @@ export default function PainelLogistica() {
                 labelFormatter={(label) => `Cidade: ${label}`}
               />
 
-              {/* Normal */}
-              <Bar dataKey="normal" name="Normal" stackId="v" fill={COR_PROP}>
+              {/* Normal (bloco verde grande) */}
+              <Bar
+                dataKey="normal"
+                name="Normal"
+                stackId="v"
+                fill={COR_PROP}
+                minPointSize={12}
+              >
                 <LabelList
                   dataKey="normal"
                   position="inside"
                   formatter={(v) =>
                     v ? `R$ ${Number(v).toLocaleString("pt-BR")}` : ""
                   }
-                  fill="#FFFFFF"
+                  fill="#064E3B"
                   style={{ fontSize: 11, fontWeight: 700 }}
                 />
               </Bar>
 
-              {/* Demonstração */}
-              <Bar dataKey="demo" name="Demonstração" stackId="v" fill={COR_TERC}>
+              {/* Demonstração (bloco amarelo) */}
+              <Bar
+                dataKey="demo"
+                name="Demonstração"
+                stackId="v"
+                fill={COR_TERC}
+                minPointSize={8}
+              >
                 <LabelList
                   dataKey="demo"
                   position="inside"
                   formatter={(v) =>
                     v ? `R$ ${Number(v).toLocaleString("pt-BR")}` : ""
                   }
-                  fill="#FFFFFF"
+                  fill="#92400E"
                   style={{ fontSize: 11, fontWeight: 700 }}
                 />
               </Bar>
