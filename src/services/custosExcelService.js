@@ -3,12 +3,12 @@ import * as XLSX from "xlsx";
 
 // Lê o arquivo LOGISTICA2026.xlsx em public/data/LOGISTICA2026.xlsx
 async function loadCustosSheet() {
-  const baseUrl = import.meta.env.BASE_URL || "/";
-  const res = await fetch(`${baseUrl}public/data/LOGISTICA2026.xlsx`);
+const baseUrl = import.meta.env.BASE_URL || "/";
+const res = await fetch(`${baseUrl}data/LOGISTICA2026.xlsx`);
 
-  if (!res.ok) {
-    throw new Error("Erro ao carregar LOGISTICA2026.xlsx em public/data/LOGISTICA2026.xlsx");
-  }
+if (!res.ok) {
+  throw new Error("Erro ao carregar LOGISTICA2026.xlsx em public/data/LOGISTICA2026.xlsx");
+}
 
   const arrayBuffer = await res.arrayBuffer();
   const workbook = XLSX.read(arrayBuffer, { type: "array" });
