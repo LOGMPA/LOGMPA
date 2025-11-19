@@ -178,7 +178,7 @@ export async function loadSolicitacoesFromExcel() {
     throw new Error(msg);
   }
 
-  // Lê como matriz (linha/coluna), sem assumir que o cabeçalho é a linha 1
+  // Lê a aba como matriz (linha/coluna)
   const matrix = XLSX.utils.sheet_to_json(ws, {
     header: 1,
     defval: "",
@@ -190,36 +190,13 @@ export async function loadSolicitacoesFromExcel() {
     return [];
   }
 
-  // Acha a linha de cabeçalho que tenha STATUS / FRETE / CLIENTE/NOTA
-  const findHeaderIndex = () => {
-    for (let i = 0; i < matrix.length; i++) {
-      const row = matrix[i];
-      const set = new Set(
-        row
-          .map((c) => String(c || "").trim().toUpperCase())
-          .filter((s) => s.length)
-      );
-      const hasStatus = set.has("STATUS");
-      const hasFrete = set.has("FRETE");
-      const hasCliente =
-        set.has("CLIENTE/NOTA") || set.has("CLIENTE / NOTA") || set.has("CLIENTE");
-      if (hasStatus && hasFrete && hasCliente) {
-        return i;
-      }
-    }
-    return -1;
-  };
+  // Usa SEMPRE a primeira linha como cabeçalho, podando espaços
+  const headerRow = matrix[0].map((c) => String(c || "").trim());
+  const dataRows = matrix.slice(1);
 
-  let headerIndex = findHeaderIndex();
-  if (headerIndex === -1) {
-    console.warn(
-      "[excelClient] Não achei cabeçalho com STATUS/FRETE/CLIENTE/NOTA; usando linha 1 como fallback."
-    );
-    headerIndex = 0;
-  }
-
-  const headerRow = matrix[headerIndex].map((c) => String(c || "").trim());
-  const dataRows = matrix.slice(headerIndex + 1);
+  // Log rápido pra debug (primeiras linhas brutas)
+  console.debug("[excelClient] Cabeçalho detectado:", headerRow);
+  console.debug("[excelClient] Primeira linha de dados:", dataRows[0]);
 
   const rows = dataRows.map((arr) => {
     const obj = {};
