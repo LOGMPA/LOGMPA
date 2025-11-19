@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 
-const EXCEL_URL = "/data/LOGISTICA2026.xlsx";
+const EXCEL_URL = "data/LOGISTICA2026.xlsx";
 
 let cachedData = null;
 let cachedError = null;
