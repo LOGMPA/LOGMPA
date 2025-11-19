@@ -62,8 +62,8 @@ const MAP_CANON = new Map(CIDADES.map((c) => [NORM(c), c]));
 const canonCidade = (txt) => MAP_CANON.get(NORM(txt)) || null;
 
 /* ========= Cores ========= */
-const COR_TERC = "#F59E0B"; // agora usado para Demonstração
-const COR_PROP = "#15803D"; // agora usado para Normal
+const COR_TERC = "#F59E0B"; // Demonstração
+const COR_PROP = "#15803D"; // Normal
 const GRID_LIGHT = "#E2E8F0";
 const BADGE_BG = "#065F46";
 const BADGE_TEXT = "#FFFFFF";
@@ -152,7 +152,7 @@ export default function PainelLogistica() {
     typeof s._status_up === "string" &&
     s._status_up.toUpperCase().includes("SUSPENSO");
 
-  /* ========= Contagem de status (agora inclui (D), exclui SUSPENSO) ========= */
+  /* ========= Contagem de status (inclui (D), exclui SUSPENSO) ========= */
   const contagemStatus = useMemo(() => {
     const base = solicitacoes.filter((s) => !isSuspenso(s));
     return {
@@ -167,11 +167,7 @@ export default function PainelLogistica() {
   const recebidos = useMemo(
     () =>
       solicitacoes
-        .filter(
-          (s) =>
-            s._status_base === "RECEBIDO" &&
-            !isSuspenso(s)
-        )
+        .filter((s) => s._status_base === "RECEBIDO" && !isSuspenso(s))
         .sort(
           (a, b) =>
             (a._previsao_date?.getTime() || 0) -
@@ -183,11 +179,7 @@ export default function PainelLogistica() {
   const programados = useMemo(
     () =>
       solicitacoes
-        .filter(
-          (s) =>
-            s._status_base === "PROGRAMADO" &&
-            !isSuspenso(s)
-        )
+        .filter((s) => s._status_base === "PROGRAMADO" && !isSuspenso(s))
         .sort(
           (a, b) =>
             (a._previsao_date?.getTime() || 0) -
@@ -199,11 +191,7 @@ export default function PainelLogistica() {
   const emRota = useMemo(
     () =>
       solicitacoes
-        .filter(
-          (s) =>
-            s._status_base === "EM ROTA" &&
-            !isSuspenso(s)
-        )
+        .filter((s) => s._status_base === "EM ROTA" && !isSuspenso(s))
         .sort(
           (a, b) =>
             (a._previsao_date?.getTime() || 0) -
@@ -263,6 +251,18 @@ export default function PainelLogistica() {
       };
     });
   }, [solicitacoes, mesRef]);
+
+  // Menor valor positivo pra base da escala logarítmica
+  const minLogY = useMemo(() => {
+    const vals = [];
+    for (const d of dadosCidadesColuna) {
+      if (d.normal > 0) vals.push(d.normal);
+      if (d.demo > 0) vals.push(d.demo);
+    }
+    if (!vals.length) return 1;
+    const m = Math.min(...vals);
+    return m > 0 ? m : 1;
+  }, [dadosCidadesColuna]);
 
   return (
     <div className="p-6 md:p-8 space-y-8">
@@ -452,6 +452,9 @@ export default function PainelLogistica() {
               <CartesianGrid strokeDasharray="3 3" stroke={GRID_LIGHT} />
               <XAxis dataKey="cidade" angle={-15} textAnchor="end" height={50} />
               <YAxis
+                scale="log"
+                domain={[minLogY, "auto"]}
+                allowDataOverflow
                 tickFormatter={(v) =>
                   `R$ ${Number(v).toLocaleString("pt-BR")}`
                 }
