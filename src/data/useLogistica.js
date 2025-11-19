@@ -14,7 +14,7 @@ export function useFreteMaquinas() {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch("/data/LOGISTICA2026.xlsx");
+        const response = await fetch(`${import.meta.env.BASE_URL}data/LOGISTICA2026.xlsx`);
         if (!res.ok) throw new Error("Erro ao carregar planilha");
         const buf = await res.arrayBuffer();
         const wb = XLSX.read(buf, { type: "array" });
