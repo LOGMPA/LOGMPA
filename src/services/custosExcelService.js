@@ -1,236 +1,160 @@
 // src/services/custosExcelService.js
 import * as XLSX from "xlsx";
 
-// Lê o arquivo LOGISTICA2026.xlsx em public/data/LOGISTICA2026.xlsx
-async function loadCustosSheet() {
-  const baseUrl = import.meta.env.BASE_URL || "/";
-  const res = await fetch(`${baseUrl}data/LOGISTICA2026.xlsx`);
+const BASE_URL = import.meta.env.BASE_URL || "/";
 
-  if (!res.ok) {
-    throw new Error(
-      "Erro ao carregar LOGISTICA2026.xlsx em public/data/LOGISTICA2026.xlsx"
-    );
-  }
+// Arquivo LOGISTICA2026.xlsx em public/data
+const EXCEL_URL = `${BASE_URL}data/LOGISTICA2026.xlsx`;
 
-  const arrayBuffer = await res.arrayBuffer();
-  const workbook = XLSX.read(arrayBuffer, { type: "array" });
-  const sheet = workbook.Sheets["CUSTOS"];
+// Guia usada para os gráficos de custos
+const SHEET_NAME = "CUSTOS";
 
-  if (!sheet) {
-    throw new Error(
-      'Aba "CUSTOS" não encontrada na planilha LOGISTICA2026.xlsx'
-    );
-  }
+// Range da parte GERAL do ano fiscal (tabelão horizontal)
+// Cabeçalho: B4:AL4
+// Conteúdo:  B5:AL20
+const RANGE_GERAL = "B4:AL20";
 
-  const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true });
-  return rows;
-}
+const READ_OPTS = {
+  type: "array",
+  cellDates: true,
+  dense: true,
+};
 
-// ---------- helpers básicos ----------
-
+// Conversão básica pra número
 function toNumber(v) {
-  if (v === null || v === undefined || v === "") return 0;
+  if (v == null || v === "") return 0;
   if (typeof v === "number") return v;
-  if (typeof v === "string") {
-    const s = v.replace(/R\$\s*/gi, "").replace(/\./g, "").replace(",", ".");
-    const n = Number(s);
-    return Number.isNaN(n) ? 0 : n;
+  return (
+    Number(
+      String(v)
+        .replace(/[^0-9,-.]/g, "")
+        .replace(/\./g, "")
+        .replace(",", ".")
+    ) || 0
+  );
+}
+
+/**
+ * Lê a guia CUSTOS e devolve o bloco geral (ANO FISCAL 2026)
+ * como uma tabela estruturada, usando B4:AL20.
+ *
+ * - header: array com os nomes de coluna (já tratados e deduplicados)
+ * - rows: array de objetos { TP, CARRETA, COLHEITADEIRA, ..., APROVEITAMENTO }
+ * - byTp: map por valor de "TP" (ex: "Meta Frete 2026", "Média (P+T)", etc)
+ */
+export async function loadCustosTabelaGeral() {
+  console.info("[custosExcel] Buscando LOGISTICA2026.xlsx em:", EXCEL_URL);
+
+  const resp = await fetch(EXCEL_URL, { cache: "no-store" });
+  if (!resp.ok) {
+    const msg = `Falha ao buscar ${EXCEL_URL} (HTTP ${resp.status}).`;
+    console.error("[custosExcel]", msg);
+    throw new Error(msg);
   }
-  return 0;
-}
 
-function toPercent(v) {
-  if (v === null || v === undefined || v === "") return 0;
-  if (typeof v === "number") return v;
-  if (typeof v === "string") {
-    let s = v.trim();
-    const hasPercent = s.includes("%");
-    s = s.replace("%", "").replace(",", ".");
-    let n = Number(s);
-    if (Number.isNaN(n)) return 0;
-    if (hasPercent && n > 1) n = n / 100;
-    return n;
+  const buf = await resp.arrayBuffer();
+  const wb = XLSX.read(buf, READ_OPTS);
+
+  const ws =
+    wb.Sheets[SHEET_NAME] ||
+    wb.Sheets[wb.SheetNames.find((n) => n === SHEET_NAME)] ||
+    wb.Sheets[wb.SheetNames[0]];
+
+  if (!ws) {
+    const msg = `Guia "${SHEET_NAME}" não encontrada na LOGISTICA2026.xlsx.`;
+    console.error("[custosExcel]", msg);
+    throw new Error(msg);
   }
-  return 0;
-}
 
-// excelRow e excelColIndex são 1-based (A1 = row 1, col 1)
-function getCell(rows, excelRow, excelColIndex) {
-  const r = rows[excelRow - 1] || [];
-  return r[excelColIndex - 1];
-}
+  // Lê só o range B4:AL20 como matriz (linha/coluna)
+  const matrix = XLSX.utils.sheet_to_json(ws, {
+    header: 1,
+    defval: "",
+    raw: true,
+    range: RANGE_GERAL,
+  });
 
-// Soma valores em um intervalo de colunas para cada linha
-function parseBlockByRowSum(rows, startRow, endRow, startCol, endCol) {
-  const out = [];
-  for (let excelRow = startRow; excelRow <= endRow; excelRow++) {
-    const r = rows[excelRow - 1] || [];
-    const label = String(r[startCol - 1] ?? "").trim();
-    if (!label) continue;
-    let total = 0;
-    for (let c = startCol; c <= endCol; c++) {
-      total += toNumber(r[c - 1]);
+  if (!matrix.length) {
+    console.warn("[custosExcel] Range B4:AL20 vazio na guia CUSTOS.");
+    return { header: [], rows: [], byTp: {} };
+  }
+
+  // Primeira linha do range = cabeçalho (linha 4 da planilha)
+  const headerRaw = matrix[0].map((c) => String(c || "").trim());
+
+  // Deduplica cabeçalhos repetidos (R$, MOTOBOY, etc)
+  const used = {};
+  const header = headerRaw.map((h) => {
+    if (!h) return "";
+    let key = h;
+    if (used[key]) {
+      used[key] += 1;
+      key = `${key}_${used[key]}`;
+    } else {
+      used[key] = 1;
     }
-    out.push({ label, value: total });
+    return key;
+  });
+
+  // Linhas reais de dados (B5:AL20)
+  const dataRows = matrix.slice(1);
+
+  const rows = dataRows
+    .map((arr) => {
+      const obj = {};
+      header.forEach((key, idx) => {
+        if (!key) return;
+        obj[key] = arr[idx];
+      });
+      return obj;
+    })
+    // joga fora linha totalmente vazia (sem TP e sem qualquer outro valor)
+    .filter((r) => {
+      const hasTp = String(r["TP"] || "").trim().length > 0;
+      const hasOther = Object.keys(r).some(
+        (k) => k !== "TP" && r[k] != null && String(r[k]).trim() !== ""
+      );
+      return hasTp || hasOther;
+    });
+
+  // Mapa por TP (Meta Frete 2026, Média (P+T), etc)
+  const byTp = {};
+  for (const r of rows) {
+    const tp = String(r["TP"] || "").trim();
+    if (!tp) continue;
+    byTp[tp] = r;
   }
-  return out;
+
+  console.info(
+    "[custosExcel] Tabela geral carregada:",
+    rows.length,
+    "linhas,",
+    header.length,
+    "colunas."
+  );
+
+  return { header, rows, byTp };
 }
 
-// Pega label em uma coluna e valor em outra
-function parseBlockLabelValue(
-  rows,
-  startRow,
-  endRow,
-  labelCol,
-  valueCol,
-  asPercent = false
-) {
-  const out = [];
-  for (let excelRow = startRow; excelRow <= endRow; excelRow++) {
-    const r = rows[excelRow - 1] || [];
-    const label = String(r[labelCol - 1] ?? "").trim();
-    if (!label) continue;
-    const raw = r[valueCol - 1];
-    const value = asPercent ? toPercent(raw) : toNumber(raw);
-    out.push({ label, value });
-  }
-  return out;
-}
+/**
+ * Exemplo de helper pra você usar nos gráficos de Máquinas:
+ * retorna um pequeno resumo da linha "Meta Frete 2026" e "Média (P+T)".
+ *
+ * Pode ser plugado direto num gráfico tipo "Meta vs Real (Total Máquinas)".
+ */
+export async function loadResumoMaquinasMetaVsReal() {
+  const { byTp } = await loadCustosTabelaGeral();
 
-// ========== 1. CUSTOS MÁQUINAS ==========
-//
-// Tudo usando exatamente o que você mandou:
-//
-// TRANSPORTE MÁQUINAS 2026 - META VS REAL
-// Cabeçalho: A11:G11
-// Conteúdo: A12:G13
+  const meta = byTp["Meta Frete 2026"] || {};
+  const media = byTp["Média (P+T)"] || byTp["Media (P+T)"] || {};
 
-function parseGrafico01(rows) {
-  // Label em A, somando B..G pra cada linha (meta x real)
-  return parseBlockByRowSum(rows, 12, 13, 1, 7);
-}
+  const metaTotal =
+    toNumber(meta["Soma Proprio"]) + toNumber(meta["Soma Terceiro"]);
+  const realTotal =
+    toNumber(media["Soma Proprio"]) + toNumber(media["Soma Terceiro"]);
 
-// CUSTO POR TIPO
-// Cabeçalho: A17:D17
-// Conteúdo: A18:D23
-
-function parseGrafico02(rows) {
-  return parseBlockByRowSum(rows, 18, 23, 1, 4);
-}
-
-// CUSTO COM TERCEIROS
-// Cabeçalho: A28:C28
-// Conteúdo: A29:C36
-
-function parseGrafico03(rows) {
-  return parseBlockByRowSum(rows, 29, 36, 1, 3);
-}
-
-// FROTA PRÓPRIA
-// A especificação não trouxe um bloco separado pra isso.
-// Vou retornar vazio pra não quebrar nada visualmente.
-// Se depois tiver tabela específica, a gente pluga aqui.
-function parseGrafico04(_rows) {
-  return [];
-}
-
-// UTILIZAÇÃO DE MUNCK
-// Cabeçalho: A46:B46
-// Conteúdo: A47:B54
-
-function parseGrafico05(rows) {
-  return parseBlockLabelValue(rows, 47, 54, 1, 2);
-}
-
-// ========== 2. CUSTOS PEÇAS ==========
-//
-// COURIER POR LOJA
-// Cabeçalho: D46:E46
-// Conteúdo: D47:E54
-
-function parseGrafico06(rows) {
-  return parseBlockLabelValue(rows, 47, 54, 4, 5);
-}
-
-// TRANSPORTADORA POR LOJA
-// Cabeçalho: G46:H46
-// Conteúdo: G47:H54
-
-function parseGrafico07(rows) {
-  return parseBlockLabelValue(rows, 47, 54, 7, 8);
-}
-
-// ========== 3. CUSTOS FROTA ==========
-//
-// CUSTO COURIER
-// Cabeçalho: A61:B61
-// Conteúdo: A62:B80
-// (vou usar isso como grafico08)
-
-function parseGrafico08(rows) {
-  return parseBlockLabelValue(rows, 62, 80, 1, 2);
-}
-
-// CUSTO TRANSPORTADORA
-// Cabeçalho: D61:E61
-// Conteúdo: D62:E80
-// (grafico09)
-
-function parseGrafico09(rows) {
-  return parseBlockLabelValue(rows, 62, 80, 4, 5);
-}
-
-// Custos DAF 2026
-// Cabeçalho: G60:H60
-// Conteúdo: G61:H68
-//
-// Custos VW 2026
-// Cabeçalho: G73:H73
-// Conteúdo: G74:H82
-
-function parseGastosVWDAF(rows) {
-  const daf = parseBlockLabelValue(rows, 61, 68, 7, 8);
-  const vw = parseBlockLabelValue(rows, 74, 82, 7, 8);
-  return { vw, daf };
-}
-
-// Aproveitamento
-// Cabeçalho: A90:B90
-// Conteúdo: A91:B92
-
-function parseGrafico12(rows) {
-  return parseBlockLabelValue(rows, 91, 92, 1, 2, true);
-}
-
-// ========== exports ==========
-
-export async function loadCustosMaquinas() {
-  const rows = await loadCustosSheet();
-  return {
-    grafico01MetaVsReal: parseGrafico01(rows),
-    grafico02SomaCustos: parseGrafico02(rows),
-    grafico03Terceiros: parseGrafico03(rows),
-    grafico04Proprio: parseGrafico04(rows),
-    grafico05Munck: parseGrafico05(rows),
-  };
-}
-
-export async function loadCustosPecas() {
-  const rows = await loadCustosSheet();
-  return {
-    grafico06PecasCourierPorLoja: parseGrafico06(rows),
-    grafico07TranspPC: parseGrafico07(rows),
-  };
-}
-
-export async function loadCustosFrota() {
-  const rows = await loadCustosSheet();
-  const { vw, daf } = parseGastosVWDAF(rows);
-  return {
-    grafico08PorMotoBoy: parseGrafico08(rows),
-    grafico09PorTransportadora: parseGrafico09(rows),
-    grafico10GastosVW: vw,
-    grafico11GastosDAF: daf,
-    grafico12Aproveitamento: parseGrafico12(rows),
-  };
+  return [
+    { label: "Meta Frete 2026", value: metaTotal },
+    { label: "Média (P+T)", value: realTotal },
+  ];
 }
