@@ -11,7 +11,7 @@ export const EXCEL_URL = `${BASE_URL}data/LOGISTICA2026.xlsx`;
 
 // Nome exato da guia que vamos usar dentro do LOGISTICA2026.xlsx
 // >>> A GUIA REAL SE CHAMA "FRETE MÁQUINAS"
-const SHEET_NAME = "FRETE MÁQUINAS";
+const SHEET_NAME = "FRETE MAQUINAS";
 
 /* ---------------- helpers ---------------- */
 
