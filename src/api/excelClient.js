@@ -4,7 +4,7 @@ import * as XLSX from "xlsx";
 /* ---------------- CONFIG: LOGISTICA2026.xlsx ---------------- */
 
 // Arquivo LOGISTICA2026.xlsx servido pelo próprio GitHub Pages
-export const EXCEL_URL = "https://logmpa.github.io/LOG/data/LOGISTICA2026.xlsx";
+export const EXCEL_URL = "https://logmpa.github.io/LOG/public/data/LOGISTICA2026.xlsx";
 
 // Nome exato da guia que vamos usar dentro do LOGISTICA2026.xlsx
 const SHEET_NAME = "Guia Frete Máquinas";
