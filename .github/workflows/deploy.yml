@@ -2,8 +2,8 @@ name: Deploy Vite Logistica 2026
 
 on:
   push:
-    branches: ["main"]    # deploy automático quando mudar o main
-  workflow_dispatch:       # habilita o botão "Run workflow"
+    branches: ["main"]    
+  workflow_dispatch:       
 
 permissions:
   contents: read
