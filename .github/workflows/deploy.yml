@@ -1,9 +1,9 @@
-name: Deploy Vite Logistica 2026
+name: Deploy Vite to GitHub Pages
 
 on:
   push:
-    branches: ["main"]    
-  workflow_dispatch:       
+    branches: [ main ]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -12,38 +12,39 @@ permissions:
 
 concurrency:
   group: "pages"
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout código
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: "npm"
+          cache: npm
 
-      - name: Instalar dependências
-        run: npm install
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Build do Vite
+      - name: Build
         run: npm run build
 
-      - name: Upload artefato para Pages
+      - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: ./dist
 
   deploy:
-    needs: build
-    runs-on: ubuntu-latest
     environment:
       name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    needs: build
+    runs-on: ubuntu-latest
     steps:
-      - name: Deploy para GitHub Pages
-        id: deploy-pages
+      - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
