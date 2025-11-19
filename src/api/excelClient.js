@@ -178,7 +178,57 @@ export async function loadSolicitacoesFromExcel() {
     throw new Error(msg);
   }
 
-  const rows = XLSX.utils.sheet_to_json(ws, { defval: "", raw: true });
+  // Lê como matriz (linha/coluna), sem assumir que o cabeçalho é a linha 1
+  const matrix = XLSX.utils.sheet_to_json(ws, {
+    header: 1,
+    defval: "",
+    raw: true,
+  });
+
+  if (!matrix.length) {
+    console.info("[excelClient] Planilha vazia, nenhuma linha.");
+    return [];
+  }
+
+  // Acha a linha de cabeçalho que tenha STATUS / FRETE / CLIENTE/NOTA
+  const findHeaderIndex = () => {
+    for (let i = 0; i < matrix.length; i++) {
+      const row = matrix[i];
+      const set = new Set(
+        row
+          .map((c) => String(c || "").trim().toUpperCase())
+          .filter((s) => s.length)
+      );
+      const hasStatus = set.has("STATUS");
+      const hasFrete = set.has("FRETE");
+      const hasCliente =
+        set.has("CLIENTE/NOTA") || set.has("CLIENTE / NOTA") || set.has("CLIENTE");
+      if (hasStatus && hasFrete && hasCliente) {
+        return i;
+      }
+    }
+    return -1;
+  };
+
+  let headerIndex = findHeaderIndex();
+  if (headerIndex === -1) {
+    console.warn(
+      "[excelClient] Não achei cabeçalho com STATUS/FRETE/CLIENTE/NOTA; usando linha 1 como fallback."
+    );
+    headerIndex = 0;
+  }
+
+  const headerRow = matrix[headerIndex].map((c) => String(c || "").trim());
+  const dataRows = matrix.slice(headerIndex + 1);
+
+  const rows = dataRows.map((arr) => {
+    const obj = {};
+    headerRow.forEach((key, idx) => {
+      if (!key) return;
+      obj[key] = arr[idx];
+    });
+    return obj;
+  });
 
   const out = rows
     .map((row, i) => normalizeRow(row, i))
