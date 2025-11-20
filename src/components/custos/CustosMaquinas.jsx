@@ -15,14 +15,23 @@ import {
 } from "recharts";
 import { loadCustosMaquinas } from "@/services/custosExcelService";
 
-const VERDE = "#007233";
-const AMARELO = "#FFC800";
-const VERDE_CLARO = "#76B947";
+// PALETA OFICIAL
+const VERDE_ESCURO = "#2A5E20"; // principal
+const VERDE_MEDIO = "#387C2B";  // apoio
+const AMARELO = "#FCDC01";
+const CREME = "#FFF5AB";
 
-const PIE_COLORS = [AMARELO, VERDE, VERDE_CLARO, "#4A7729", "#A1C935", "#265C1B"];
-const PIE_LABEL_COLORS = ["#A66A00", "#00451C", "#476F1F", "#2E4F17", "#617A1D", "#15380F"];
+// cores da pizza usando só a paleta base
+const PIE_COLORS = [VERDE_ESCURO, VERDE_MEDIO, AMARELO, CREME];
 
-const formatCurrency = (value) => {
+const PIE_LABEL_COLORS = [
+  "#2A3A12",
+  "#173411",
+  "#65290B",
+  "#253A16",
+];
+
+const formatCurrency = (value: any) => {
   if (value === null || value === undefined || value === "") return "";
   const num = Number(value);
   if (Number.isNaN(num)) return "";
@@ -32,7 +41,7 @@ const formatCurrency = (value) => {
   })}`;
 };
 
-function filterEmptyRows(data, numericKeys) {
+function filterEmptyRows(data: any, numericKeys: string[]) {
   if (!Array.isArray(data)) return [];
   return data.filter((item) =>
     numericKeys.some((key) => {
@@ -46,8 +55,8 @@ function filterEmptyRows(data, numericKeys) {
 }
 
 export default function CustosMaquinas() {
-  const [data, setData] = useState(null);
-  const [status, setStatus] = useState("loading");
+  const [data, setData] = useState<any>(null);
+  const [status, setStatus] = useState<"loading" | "ok" | "error">("loading");
 
   useEffect(() => {
     async function fetchData() {
@@ -103,7 +112,7 @@ export default function CustosMaquinas() {
     percent,
     index,
     value,
-  }) => {
+  }: any) => {
     const RADIAN = Math.PI / 180;
     const radius = outerRadius * 1.18;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
@@ -133,7 +142,7 @@ export default function CustosMaquinas() {
 
   if (status === "loading") {
     return (
-      <div className="text-sm text-slate-500">
+      <div className="text-sm font-bold" style={{ color: VERDE_ESCURO }}>
         Carregando dados de custos de máquinas...
       </div>
     );
@@ -141,7 +150,7 @@ export default function CustosMaquinas() {
 
   if (status === "error" || !data) {
     return (
-      <div className="text-sm text-red-600">
+      <div className="text-sm font-bold text-red-700">
         Erro ao carregar dados de custos de máquinas.
       </div>
     );
@@ -149,10 +158,10 @@ export default function CustosMaquinas() {
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      {/* 1º GRÁFICO – META VS REAL (meta larga, média menor na frente) */}
+      {/* 1º GRÁFICO – META VS REAL (excel vibes) */}
       <Card className="shadow-sm">
         <CardHeader>
-          <CardTitle className="text-base font-semibold uppercase text-black">
+          <CardTitle className="text-base font-bold uppercase" style={{ color: VERDE_ESCURO }}>
             TRANSPORTE MÁQUINAS - META VS REAL
           </CardTitle>
         </CardHeader>
@@ -172,7 +181,7 @@ export default function CustosMaquinas() {
                 tick={{
                   fontSize: 12,
                   fontWeight: 700,
-                  fill: "#000",
+                  fill: VERDE_ESCURO,
                 }}
               />
               <YAxis
@@ -181,11 +190,11 @@ export default function CustosMaquinas() {
                 tick={{
                   fontSize: 12,
                   fontWeight: 700,
-                  fill: "#000",
+                  fill: VERDE_ESCURO,
                 }}
               />
               <Tooltip
-                formatter={(value) => formatCurrency(value)}
+                formatter={(value: any) => formatCurrency(value)}
                 cursor={{ fill: "rgba(0,0,0,0.03)" }}
               />
               <Legend
@@ -194,15 +203,15 @@ export default function CustosMaquinas() {
                 wrapperStyle={{
                   fontSize: 11,
                   fontWeight: 700,
-                  color: "#000",
+                  color: VERDE_ESCURO,
                   paddingBottom: 8,
                 }}
               />
-              {/* Meta: coluna de fundo, mais larga */}
+              {/* META: verde, coluna de fundo mais larga */}
               <Bar
                 dataKey="meta"
-                name="META FRETE 2026"
-                fill={AMARELO}
+                name="Meta Frete 2026"
+                fill={VERDE_ESCURO}
                 barSize={40}
                 radius={[4, 4, 0, 0]}
               >
@@ -218,11 +227,11 @@ export default function CustosMaquinas() {
                   }}
                 />
               </Bar>
-              {/* Média: coluna menor, na frente, como se preenchesse a meta */}
+              {/* MÉDIA: amarelo, menor, na frente preenchendo a meta */}
               <Bar
                 dataKey="mediaAtual"
-                name="MÉDIA (P+T)"
-                fill={VERDE}
+                name="Média (P+T)"
+                fill={AMARELO}
                 barSize={26}
                 radius={[4, 4, 0, 0]}
               >
@@ -233,7 +242,7 @@ export default function CustosMaquinas() {
                   style={{
                     fontSize: 11,
                     fontWeight: 700,
-                    fill: "#FFFFFF",
+                    fill: VERDE_ESCURO,
                   }}
                 />
               </Bar>
@@ -242,10 +251,10 @@ export default function CustosMaquinas() {
         </CardContent>
       </Card>
 
-      {/* 2º GRÁFICO – CUSTO POR TIPO (empilhado + qtd frete em cima) */}
+      {/* 2º GRÁFICO – CUSTO POR TIPO */}
       <Card className="shadow-sm">
         <CardHeader>
-          <CardTitle className="text-base font-semibold uppercase text-black">
+          <CardTitle className="text-base font-bold uppercase" style={{ color: VERDE_ESCURO }}>
             TRANSPORTE MÁQUINAS - CUSTO POR TIPO
           </CardTitle>
         </CardHeader>
@@ -265,7 +274,7 @@ export default function CustosMaquinas() {
                 tick={{
                   fontSize: 12,
                   fontWeight: 700,
-                  fill: "#000",
+                  fill: VERDE_ESCURO,
                 }}
               />
               <YAxis
@@ -274,12 +283,12 @@ export default function CustosMaquinas() {
                 tick={{
                   fontSize: 12,
                   fontWeight: 700,
-                  fill: "#000",
+                  fill: VERDE_ESCURO,
                 }}
               />
               <Tooltip
-                formatter={(value, name) => {
-                  if (name === "QTD FRETE") return value;
+                formatter={(value: any, name: any) => {
+                  if (name === "Qtd Frete") return value;
                   return formatCurrency(value);
                 }}
                 cursor={{ fill: "rgba(0,0,0,0.03)" }}
@@ -290,14 +299,14 @@ export default function CustosMaquinas() {
                 wrapperStyle={{
                   fontSize: 11,
                   fontWeight: 700,
-                  color: "#000",
+                  color: VERDE_ESCURO,
                   paddingBottom: 8,
                 }}
               />
               <Bar
                 dataKey="somaProprio"
-                name="SOMA PRÓPRIO"
-                fill={VERDE}
+                name="Soma Próprio"
+                fill={VERDE_MEDIO}
                 barSize={40}
                 stackId="tipo"
                 radius={[4, 4, 0, 0]}
@@ -315,7 +324,7 @@ export default function CustosMaquinas() {
               </Bar>
               <Bar
                 dataKey="somaTerceiro"
-                name="SOMA TERCEIRO"
+                name="Soma Terceiro"
                 fill={AMARELO}
                 barSize={40}
                 stackId="tipo"
@@ -328,14 +337,14 @@ export default function CustosMaquinas() {
                   style={{
                     fontSize: 11,
                     fontWeight: 700,
-                    fill: "#000",
+                    fill: VERDE_ESCURO,
                   }}
                 />
               </Bar>
-              {/* qtd frete - número solto bem em cima da pilha */}
+              {/* qtd frete – número em cima da pilha */}
               <Bar
                 dataKey="qtdFrete"
-                name="QTD FRETE"
+                name="Qtd Frete"
                 fill="transparent"
                 isAnimationActive={false}
               >
@@ -346,7 +355,7 @@ export default function CustosMaquinas() {
                   style={{
                     fontSize: 11,
                     fontWeight: 700,
-                    fill: "#000",
+                    fill: VERDE_ESCURO,
                   }}
                 />
               </Bar>
@@ -355,10 +364,10 @@ export default function CustosMaquinas() {
         </CardContent>
       </Card>
 
-      {/* 3º GRÁFICO – CUSTO COM TERCEIROS (barra + km dentro) */}
+      {/* 3º GRÁFICO – CUSTO COM TERCEIROS */}
       <Card className="shadow-sm lg:col-span-1">
         <CardHeader>
-          <CardTitle className="text-base font-semibold uppercase text-black">
+          <CardTitle className="text-base font-bold uppercase" style={{ color: VERDE_ESCURO }}>
             TRANSPORTE MÁQUINAS - CUSTO COM TERCEIROS
           </CardTitle>
         </CardHeader>
@@ -377,7 +386,7 @@ export default function CustosMaquinas() {
                 tick={{
                   fontSize: 12,
                   fontWeight: 700,
-                  fill: "#000",
+                  fill: VERDE_ESCURO,
                 }}
               />
               <YAxis
@@ -389,21 +398,21 @@ export default function CustosMaquinas() {
                 tick={{
                   fontSize: 12,
                   fontWeight: 700,
-                  fill: "#000",
+                  fill: VERDE_ESCURO,
                 }}
               />
               <Tooltip
-                formatter={(value, name) => {
-                  if (name === "Total KM") return value;
+                formatter={(value: any, name: any) => {
+                  if (name === "Total KM") return `${value} km`;
                   return formatCurrency(value);
                 }}
                 cursor={{ fill: "rgba(0,0,0,0.03)" }}
               />
-              {/* sem legenda, igual seu print */}
+              {/* sem legenda, igual ao print */}
               <Bar
                 dataKey="valor"
                 name="Valor Total (R$)"
-                fill={VERDE_CLARO}
+                fill={VERDE_MEDIO}
                 barSize={26}
                 radius={[0, 4, 4, 0]}
               >
@@ -428,10 +437,11 @@ export default function CustosMaquinas() {
                   dataKey="km"
                   position="insideLeft"
                   offset={5}
+                  formatter={(v: any) => `${v} km`}
                   style={{
                     fontSize: 11,
                     fontWeight: 700,
-                    fill: "#000",
+                    fill: CREME,
                   }}
                 />
               </Bar>
@@ -440,17 +450,17 @@ export default function CustosMaquinas() {
         </CardContent>
       </Card>
 
-      {/* 4º GRÁFICO – UTILIZAÇÃO DE MUNCK (pizza com rótulo caprichado) */}
+      {/* 4º GRÁFICO – UTILIZAÇÃO DE MUNCK */}
       <Card className="shadow-sm lg:col-span-1">
         <CardHeader>
-          <CardTitle className="text-base font-semibold uppercase text-center text-black">
+          <CardTitle className="text-base font-bold uppercase text-center" style={{ color: VERDE_ESCURO }}>
             CUSTOS - UTILIZAÇÃO DE MUNCK
           </CardTitle>
         </CardHeader>
         <CardContent className="h-96">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              <Tooltip formatter={(value) => formatCurrency(value)} />
+              <Tooltip formatter={(value: any) => formatCurrency(value)} />
               <Pie
                 data={dadosGrafico05}
                 dataKey="valor"
@@ -461,7 +471,7 @@ export default function CustosMaquinas() {
                 labelLine={false}
                 label={renderPieLabel}
               >
-                {dadosGrafico05.map((entry, index) => (
+                {dadosGrafico05.map((entry: any, index: number) => (
                   <Cell
                     key={`cell-${index}`}
                     fill={PIE_COLORS[index % PIE_COLORS.length]}
