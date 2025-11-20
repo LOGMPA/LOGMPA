@@ -18,14 +18,9 @@ import { loadCustosMaquinas } from "@/services/custosExcelService";
 const VERDE = "#007233";
 const AMARELO = "#FFC800";
 const VERDE_CLARO = "#76B947";
-const PIE_COLORS = [
-  AMARELO,
-  VERDE,
-  VERDE_CLARO,
-  "#4A7729",
-  "#A1C935",
-  "#265C1B",
-];
+
+const PIE_COLORS = [AMARELO, VERDE, VERDE_CLARO, "#4A7729", "#A1C935", "#265C1B"];
+const PIE_LABEL_COLORS = ["#A66A00", "#00451C", "#476F1F", "#2E4F17", "#617A1D", "#15380F"];
 
 const formatCurrency = (value) => {
   if (value === null || value === undefined || value === "") return "";
@@ -110,23 +105,28 @@ export default function CustosMaquinas() {
     value,
   }) => {
     const RADIAN = Math.PI / 180;
-    const radius = outerRadius * 1.15;
+    const radius = outerRadius * 1.18;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
     const item = dadosGrafico05[index];
+    const color = PIE_LABEL_COLORS[index % PIE_LABEL_COLORS.length];
 
     return (
       <text
         x={x}
         y={y}
-        fill="#000"
+        fill={color}
         textAnchor={x > cx ? "start" : "end"}
         dominantBaseline="central"
         fontSize={12}
         fontWeight={700}
       >
-        {item?.cidade} {formatCurrency(value)}{" "}
-        {`(${(percent * 100).toFixed(0)}%)`}
+        <tspan x={x} dy="-0.4em">
+          {item?.cidade}
+        </tspan>
+        <tspan x={x} dy="1.2em">
+          {`${formatCurrency(value)} - ${(percent * 100).toFixed(0)}%`}
+        </tspan>
       </text>
     );
   };
@@ -149,7 +149,7 @@ export default function CustosMaquinas() {
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      {/* GRAFICO 01 – META VS REAL (colunas empilhadas) */}
+      {/* 1º GRÁFICO – META VS REAL (meta larga, média menor na frente) */}
       <Card className="shadow-sm">
         <CardHeader>
           <CardTitle className="text-base font-semibold uppercase text-black">
@@ -160,21 +160,29 @@ export default function CustosMaquinas() {
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={dadosGrafico01}
-              barCategoryGap={15}
-              barGap={0}
-              margin={{ top: 20, right: 20, left: 10, bottom: 30 }}
+              barCategoryGap={20}
+              barGap={-25}
+              margin={{ top: 25, right: 20, left: 10, bottom: 35 }}
             >
               <XAxis
                 dataKey="item"
                 tickLine={false}
                 axisLine={false}
-                tick={{ fontSize: 12, fontWeight: 700, fill: "#000" }}
                 interval={0}
+                tick={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  fill: "#000",
+                }}
               />
               <YAxis
                 tickLine={false}
                 axisLine={false}
-                tick={{ fontSize: 12, fontWeight: 700, fill: "#000" }}
+                tick={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  fill: "#000",
+                }}
               />
               <Tooltip
                 formatter={(value) => formatCurrency(value)}
@@ -190,34 +198,43 @@ export default function CustosMaquinas() {
                   paddingBottom: 8,
                 }}
               />
+              {/* Meta: coluna de fundo, mais larga */}
               <Bar
                 dataKey="meta"
                 name="META FRETE 2026"
                 fill={AMARELO}
-                barSize={35}
+                barSize={40}
                 radius={[4, 4, 0, 0]}
-                stackId="metaReal"
               >
                 <LabelList
                   dataKey="meta"
                   position="top"
                   formatter={formatCurrency}
-                  style={{ fontSize: 11, fontWeight: 700, fill: "#000" }}
+                  offset={8}
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    fill: "#65290B",
+                  }}
                 />
               </Bar>
+              {/* Média: coluna menor, na frente, como se preenchesse a meta */}
               <Bar
                 dataKey="mediaAtual"
                 name="MÉDIA (P+T)"
                 fill={VERDE}
-                barSize={35}
+                barSize={26}
                 radius={[4, 4, 0, 0]}
-                stackId="metaReal"
               >
                 <LabelList
                   dataKey="mediaAtual"
                   position="insideTop"
                   formatter={formatCurrency}
-                  style={{ fontSize: 11, fontWeight: 700, fill: "#FFFFFF" }}
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    fill: "#FFFFFF",
+                  }}
                 />
               </Bar>
             </BarChart>
@@ -225,7 +242,7 @@ export default function CustosMaquinas() {
         </CardContent>
       </Card>
 
-      {/* GRAFICO 02 – CUSTO POR TIPO (colunas empilhadas + qtd frete em cima) */}
+      {/* 2º GRÁFICO – CUSTO POR TIPO (empilhado + qtd frete em cima) */}
       <Card className="shadow-sm">
         <CardHeader>
           <CardTitle className="text-base font-semibold uppercase text-black">
@@ -236,21 +253,29 @@ export default function CustosMaquinas() {
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={dadosGrafico02}
-              barCategoryGap={15}
+              barCategoryGap={20}
               barGap={0}
-              margin={{ top: 20, right: 20, left: 10, bottom: 30 }}
+              margin={{ top: 25, right: 20, left: 10, bottom: 35 }}
             >
               <XAxis
                 dataKey="item"
                 tickLine={false}
                 axisLine={false}
-                tick={{ fontSize: 12, fontWeight: 700, fill: "#000" }}
                 interval={0}
+                tick={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  fill: "#000",
+                }}
               />
               <YAxis
                 tickLine={false}
                 axisLine={false}
-                tick={{ fontSize: 12, fontWeight: 700, fill: "#000" }}
+                tick={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  fill: "#000",
+                }}
               />
               <Tooltip
                 formatter={(value, name) => {
@@ -273,33 +298,41 @@ export default function CustosMaquinas() {
                 dataKey="somaProprio"
                 name="SOMA PRÓPRIO"
                 fill={VERDE}
-                barSize={35}
-                radius={[4, 4, 0, 0]}
+                barSize={40}
                 stackId="tipo"
+                radius={[4, 4, 0, 0]}
               >
                 <LabelList
                   dataKey="somaProprio"
                   position="insideTop"
                   formatter={formatCurrency}
-                  style={{ fontSize: 11, fontWeight: 700, fill: "#FFFFFF" }}
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    fill: "#FFFFFF",
+                  }}
                 />
               </Bar>
               <Bar
                 dataKey="somaTerceiro"
                 name="SOMA TERCEIRO"
                 fill={AMARELO}
-                barSize={35}
-                radius={[4, 4, 0, 0]}
+                barSize={40}
                 stackId="tipo"
+                radius={[4, 4, 0, 0]}
               >
                 <LabelList
                   dataKey="somaTerceiro"
                   position="insideTop"
                   formatter={formatCurrency}
-                  style={{ fontSize: 11, fontWeight: 700, fill: "#000000" }}
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    fill: "#000",
+                  }}
                 />
               </Bar>
-              {/* QTD FRETE – número solto no topo da coluna empilhada */}
+              {/* qtd frete - número solto bem em cima da pilha */}
               <Bar
                 dataKey="qtdFrete"
                 name="QTD FRETE"
@@ -309,7 +342,12 @@ export default function CustosMaquinas() {
                 <LabelList
                   dataKey="qtdFrete"
                   position="top"
-                  style={{ fontSize: 11, fontWeight: 700, fill: "#000" }}
+                  offset={10}
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    fill: "#000",
+                  }}
                 />
               </Bar>
             </BarChart>
@@ -317,7 +355,7 @@ export default function CustosMaquinas() {
         </CardContent>
       </Card>
 
-      {/* GRAFICO 03 – CUSTO COM TERCEIROS (barra horizontal, km dentro) */}
+      {/* 3º GRÁFICO – CUSTO COM TERCEIROS (barra + km dentro) */}
       <Card className="shadow-sm lg:col-span-1">
         <CardHeader>
           <CardTitle className="text-base font-semibold uppercase text-black">
@@ -330,21 +368,29 @@ export default function CustosMaquinas() {
               data={dadosGrafico03}
               layout="vertical"
               barCategoryGap={12}
-              margin={{ left: 220, right: 40, top: 20, bottom: 20 }}
+              margin={{ left: 260, right: 40, top: 25, bottom: 25 }}
             >
               <XAxis
                 type="number"
                 tickLine={false}
                 axisLine={false}
-                tick={{ fontSize: 12, fontWeight: 700, fill: "#000" }}
+                tick={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  fill: "#000",
+                }}
               />
               <YAxis
                 dataKey="freteiro"
                 type="category"
                 tickLine={false}
                 axisLine={false}
-                tick={{ fontSize: 12, fontWeight: 700, fill: "#000" }}
-                width={200}
+                width={240}
+                tick={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  fill: "#000",
+                }}
               />
               <Tooltip
                 formatter={(value, name) => {
@@ -353,9 +399,7 @@ export default function CustosMaquinas() {
                 }}
                 cursor={{ fill: "rgba(0,0,0,0.03)" }}
               />
-              <Legend
-                wrapperStyle={{ fontSize: 11, fontWeight: 700, color: "#000" }}
-              />
+              {/* sem legenda, igual seu print */}
               <Bar
                 dataKey="valor"
                 name="Valor Total (R$)"
@@ -367,7 +411,11 @@ export default function CustosMaquinas() {
                   dataKey="valor"
                   position="insideRight"
                   formatter={formatCurrency}
-                  style={{ fontSize: 11, fontWeight: 700, fill: "#FFFFFF" }}
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    fill: "#FFFFFF",
+                  }}
                 />
               </Bar>
               <Bar
@@ -379,7 +427,12 @@ export default function CustosMaquinas() {
                 <LabelList
                   dataKey="km"
                   position="insideLeft"
-                  style={{ fontSize: 11, fontWeight: 700, fill: "#000" }}
+                  offset={5}
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    fill: "#000",
+                  }}
                 />
               </Bar>
             </BarChart>
@@ -387,7 +440,7 @@ export default function CustosMaquinas() {
         </CardContent>
       </Card>
 
-      {/* GRAFICO 04 – UTILIZAÇÃO DE MUNCK (pizza) */}
+      {/* 4º GRÁFICO – UTILIZAÇÃO DE MUNCK (pizza com rótulo caprichado) */}
       <Card className="shadow-sm lg:col-span-1">
         <CardHeader>
           <CardTitle className="text-base font-semibold uppercase text-center text-black">
