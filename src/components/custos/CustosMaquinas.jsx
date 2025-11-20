@@ -21,7 +21,7 @@ const VERDE_MEDIO = "#387C2B";  // apoio
 const AMARELO = "#FCDC01";
 const CREME = "#FFF5AB";
 
-// cores da pizza usando só a paleta base
+// cores da pizza usando a paleta
 const PIE_COLORS = [VERDE_ESCURO, VERDE_MEDIO, AMARELO, CREME];
 
 const PIE_LABEL_COLORS = [
@@ -31,7 +31,7 @@ const PIE_LABEL_COLORS = [
   "#253A16",
 ];
 
-const formatCurrency = (value: any) => {
+const formatCurrency = (value) => {
   if (value === null || value === undefined || value === "") return "";
   const num = Number(value);
   if (Number.isNaN(num)) return "";
@@ -41,7 +41,7 @@ const formatCurrency = (value: any) => {
   })}`;
 };
 
-function filterEmptyRows(data: any, numericKeys: string[]) {
+function filterEmptyRows(data, numericKeys) {
   if (!Array.isArray(data)) return [];
   return data.filter((item) =>
     numericKeys.some((key) => {
@@ -55,8 +55,8 @@ function filterEmptyRows(data: any, numericKeys: string[]) {
 }
 
 export default function CustosMaquinas() {
-  const [data, setData] = useState<any>(null);
-  const [status, setStatus] = useState<"loading" | "ok" | "error">("loading");
+  const [data, setData] = useState(null);
+  const [status, setStatus] = useState("loading");
 
   useEffect(() => {
     async function fetchData() {
@@ -104,15 +104,8 @@ export default function CustosMaquinas() {
     [grafico05Munck]
   );
 
-  const renderPieLabel = ({
-    cx,
-    cy,
-    midAngle,
-    outerRadius,
-    percent,
-    index,
-    value,
-  }: any) => {
+  const renderPieLabel = (props) => {
+    const { cx, cy, midAngle, outerRadius, percent, index, value } = props;
     const RADIAN = Math.PI / 180;
     const radius = outerRadius * 1.18;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
@@ -158,10 +151,13 @@ export default function CustosMaquinas() {
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      {/* 1º GRÁFICO – META VS REAL (excel vibes) */}
+      {/* 1º GRÁFICO – META VS REAL */}
       <Card className="shadow-sm">
         <CardHeader>
-          <CardTitle className="text-base font-bold uppercase" style={{ color: VERDE_ESCURO }}>
+          <CardTitle
+            className="text-base font-bold uppercase"
+            style={{ color: VERDE_ESCURO }}
+          >
             TRANSPORTE MÁQUINAS - META VS REAL
           </CardTitle>
         </CardHeader>
@@ -194,7 +190,7 @@ export default function CustosMaquinas() {
                 }}
               />
               <Tooltip
-                formatter={(value: any) => formatCurrency(value)}
+                formatter={(value) => formatCurrency(value)}
                 cursor={{ fill: "rgba(0,0,0,0.03)" }}
               />
               <Legend
@@ -207,7 +203,7 @@ export default function CustosMaquinas() {
                   paddingBottom: 8,
                 }}
               />
-              {/* META: verde, coluna de fundo mais larga */}
+              {/* META: verde escuro, mais larga */}
               <Bar
                 dataKey="meta"
                 name="Meta Frete 2026"
@@ -227,7 +223,7 @@ export default function CustosMaquinas() {
                   }}
                 />
               </Bar>
-              {/* MÉDIA: amarelo, menor, na frente preenchendo a meta */}
+              {/* MÉDIA: amarelo, menor na frente */}
               <Bar
                 dataKey="mediaAtual"
                 name="Média (P+T)"
@@ -254,7 +250,10 @@ export default function CustosMaquinas() {
       {/* 2º GRÁFICO – CUSTO POR TIPO */}
       <Card className="shadow-sm">
         <CardHeader>
-          <CardTitle className="text-base font-bold uppercase" style={{ color: VERDE_ESCURO }}>
+          <CardTitle
+            className="text-base font-bold uppercase"
+            style={{ color: VERDE_ESCURO }}
+          >
             TRANSPORTE MÁQUINAS - CUSTO POR TIPO
           </CardTitle>
         </CardHeader>
@@ -287,7 +286,7 @@ export default function CustosMaquinas() {
                 }}
               />
               <Tooltip
-                formatter={(value: any, name: any) => {
+                formatter={(value, name) => {
                   if (name === "Qtd Frete") return value;
                   return formatCurrency(value);
                 }}
@@ -341,7 +340,6 @@ export default function CustosMaquinas() {
                   }}
                 />
               </Bar>
-              {/* qtd frete – número em cima da pilha */}
               <Bar
                 dataKey="qtdFrete"
                 name="Qtd Frete"
@@ -367,7 +365,10 @@ export default function CustosMaquinas() {
       {/* 3º GRÁFICO – CUSTO COM TERCEIROS */}
       <Card className="shadow-sm lg:col-span-1">
         <CardHeader>
-          <CardTitle className="text-base font-bold uppercase" style={{ color: VERDE_ESCURO }}>
+          <CardTitle
+            className="text-base font-bold uppercase"
+            style={{ color: VERDE_ESCURO }}
+          >
             TRANSPORTE MÁQUINAS - CUSTO COM TERCEIROS
           </CardTitle>
         </CardHeader>
@@ -402,13 +403,12 @@ export default function CustosMaquinas() {
                 }}
               />
               <Tooltip
-                formatter={(value: any, name: any) => {
+                formatter={(value, name) => {
                   if (name === "Total KM") return `${value} km`;
                   return formatCurrency(value);
                 }}
                 cursor={{ fill: "rgba(0,0,0,0.03)" }}
               />
-              {/* sem legenda, igual ao print */}
               <Bar
                 dataKey="valor"
                 name="Valor Total (R$)"
@@ -437,7 +437,7 @@ export default function CustosMaquinas() {
                   dataKey="km"
                   position="insideLeft"
                   offset={5}
-                  formatter={(v: any) => `${v} km`}
+                  formatter={(v) => `${v} km`}
                   style={{
                     fontSize: 11,
                     fontWeight: 700,
@@ -453,14 +453,17 @@ export default function CustosMaquinas() {
       {/* 4º GRÁFICO – UTILIZAÇÃO DE MUNCK */}
       <Card className="shadow-sm lg:col-span-1">
         <CardHeader>
-          <CardTitle className="text-base font-bold uppercase text-center" style={{ color: VERDE_ESCURO }}>
+          <CardTitle
+            className="text-base font-bold uppercase text-center"
+            style={{ color: VERDE_ESCURO }}
+          >
             CUSTOS - UTILIZAÇÃO DE MUNCK
           </CardTitle>
         </CardHeader>
         <CardContent className="h-96">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              <Tooltip formatter={(value: any) => formatCurrency(value)} />
+              <Tooltip formatter={(value) => formatCurrency(value)} />
               <Pie
                 data={dadosGrafico05}
                 dataKey="valor"
@@ -471,7 +474,7 @@ export default function CustosMaquinas() {
                 labelLine={false}
                 label={renderPieLabel}
               >
-                {dadosGrafico05.map((entry: any, index: number) => (
+                {dadosGrafico05.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}
                     fill={PIE_COLORS[index % PIE_COLORS.length]}
