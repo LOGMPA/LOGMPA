@@ -8,8 +8,22 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  LabelList,
 } from "recharts";
 import { loadCustosPecas } from "@/services/custosExcelService";
+
+const VERDE = "#007233";
+const VERDE_CLARO = "#76B947";
+
+const formatCurrency = (value) => {
+  if (value === null || value === undefined || value === "") return "";
+  const num = Number(value);
+  if (Number.isNaN(num)) return "";
+  return `R$ ${num.toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+};
 
 export default function CustosPecas() {
   const [data, setData] = useState(null);
@@ -46,89 +60,189 @@ export default function CustosPecas() {
   }
 
   const {
-    grafico06MotoBoyPC,
-    grafico07TranspPC,
-    grafico08PorMotoBoy,
-    grafico09PorTransportadora,
+    grafico06MotoBoyPC = [],
+    grafico07TranspPC = [],
+    grafico08PorMotoBoy = [],
+    grafico09PorTransportadora = [],
   } = data;
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      {/* GRAFICO 06 – MOTOBOY - PC POR CIDADE */}
+      {/* GRAFICO 06 – CUSTO COURIER POR LOJA */}
       <Card className="shadow-sm">
         <CardHeader>
-          <CardTitle className="text-base font-semibold">
-            Transporte de Peças - Motoboy (PC) 2026
+          <CardTitle className="text-base font-semibold uppercase">
+            TRANSPORTE PEÇAS - CUSTO COURIER POR LOJA
           </CardTitle>
         </CardHeader>
-        <CardContent className="h-80">
+        <CardContent className="h-72">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={grafico06MotoBoyPC}>
-              <XAxis dataKey="cidade" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="valor" name="Valor (R$)" />
+            <BarChart data={grafico06MotoBoyPC} barCategoryGap={30}>
+              <XAxis
+                dataKey="cidade"
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 12 }}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 12 }}
+              />
+              <Tooltip
+                formatter={(value) => formatCurrency(value)}
+                cursor={{ fill: "rgba(0,0,0,0.03)" }}
+              />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
+              <Bar
+                dataKey="valor"
+                name="Valor (R$)"
+                fill={VERDE_CLARO}
+                barSize={40}
+                radius={[4, 4, 0, 0]}
+              >
+                <LabelList
+                  dataKey="valor"
+                  position="top"
+                  formatter={formatCurrency}
+                  style={{ fontSize: 11, fontWeight: 600, fill: "#000" }}
+                />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
 
-      {/* GRAFICO 07 – TRANSPORTADORAS - PC POR CIDADE */}
+      {/* GRAFICO 07 – CUSTO TRANSPORTADORA POR LOJA */}
       <Card className="shadow-sm">
         <CardHeader>
-          <CardTitle className="text-base font-semibold">
-            Transporte de Peças - Transportadoras (PC) 2026
+          <CardTitle className="text-base font-semibold uppercase">
+            TRANSPORTE PEÇAS - CUSTO TRANSPORTADORA POR LOJA
           </CardTitle>
         </CardHeader>
-        <CardContent className="h-80">
+        <CardContent className="h-72">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={grafico07TranspPC}>
-              <XAxis dataKey="cidade" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="valor" name="Valor (R$)" />
+            <BarChart data={grafico07TranspPC} barCategoryGap={30}>
+              <XAxis
+                dataKey="cidade"
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 12 }}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 12 }}
+              />
+              <Tooltip
+                formatter={(value) => formatCurrency(value)}
+                cursor={{ fill: "rgba(0,0,0,0.03)" }}
+              />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
+              <Bar
+                dataKey="valor"
+                name="Valor (R$)"
+                fill={VERDE}
+                barSize={40}
+                radius={[4, 4, 0, 0]}
+              >
+                <LabelList
+                  dataKey="valor"
+                  position="top"
+                  formatter={formatCurrency}
+                  style={{ fontSize: 11, fontWeight: 600, fill: "#000" }}
+                />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
 
-      {/* GRAFICO 08 – CUSTOS COM MOTOBOY (POR MOTOBOY) */}
+      {/* GRAFICO 08 – CUSTO COURIER (POR EMPRESA) */}
       <Card className="shadow-sm">
         <CardHeader>
-          <CardTitle className="text-base font-semibold">
-            Custos com Motoboy - 2026
+          <CardTitle className="text-base font-semibold uppercase">
+            TRANSPORTE PEÇAS - CUSTO COURIER
           </CardTitle>
         </CardHeader>
-        <CardContent className="h-80">
+        <CardContent className="h-72">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={grafico08PorMotoBoy}>
-              <XAxis dataKey="empresa" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="valor" name="Valor (R$)" />
+            <BarChart data={grafico08PorMotoBoy} barCategoryGap={40}>
+              <XAxis
+                dataKey="empresa"
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 11 }}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 12 }}
+              />
+              <Tooltip
+                formatter={(value) => formatCurrency(value)}
+                cursor={{ fill: "rgba(0,0,0,0.03)" }}
+              />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
+              <Bar
+                dataKey="valor"
+                name="Valor (R$)"
+                fill={VERDE_CLARO}
+                barSize={36}
+                radius={[4, 4, 0, 0]}
+              >
+                <LabelList
+                  dataKey="valor"
+                  position="top"
+                  formatter={formatCurrency}
+                  style={{ fontSize: 11, fontWeight: 600, fill: "#000" }}
+                />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
 
-      {/* GRAFICO 09 – CUSTOS COM TRANSPORTADORA (POR TRANSPORTADORA) */}
+      {/* GRAFICO 09 – CUSTO TRANSPORTADORA (POR EMPRESA) */}
       <Card className="shadow-sm">
         <CardHeader>
-          <CardTitle className="text-base font-semibold">
-            Custos com Transportadoras - 2026
+          <CardTitle className="text-base font-semibold uppercase">
+            TRANSPORTE PEÇAS - CUSTO TRANSPORTADORA
           </CardTitle>
         </CardHeader>
-        <CardContent className="h-80">
+        <CardContent className="h-72">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={grafico09PorTransportadora}>
-              <XAxis dataKey="empresa" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="valor" name="Valor (R$)" />
+            <BarChart data={grafico09PorTransportadora} barCategoryGap={40}>
+              <XAxis
+                dataKey="empresa"
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 11 }}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 12 }}
+              />
+              <Tooltip
+                formatter={(value) => formatCurrency(value)}
+                cursor={{ fill: "rgba(0,0,0,0.03)" }}
+              />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
+              <Bar
+                dataKey="valor"
+                name="Valor (R$)"
+                fill={VERDE}
+                barSize={36}
+                radius={[4, 4, 0, 0]}
+              >
+                <LabelList
+                  dataKey="valor"
+                  position="top"
+                  formatter={formatCurrency}
+                  style={{ fontSize: 11, fontWeight: 600, fill: "#000" }}
+                />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
