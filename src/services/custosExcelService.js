@@ -39,8 +39,7 @@ function toNumber(v) {
 }
 
 /**
- * Carrega a guia CUSTOS da LOGISTICA2026.xlsx
- * e devolve:
+ * Carrega a guia CUSTOS da LOGISTICA2026.xlsx e devolve:
  *  - header: nomes de coluna (B4:AL4, já deduplicados)
  *  - rows: linhas de dados (B5:AL20) como objetos
  *  - byTp: map por valor de "TP" (Meta Frete 2026, Média (P+T), etc)
@@ -140,10 +139,7 @@ export async function loadCustosTabelaGeral() {
 }
 
 /**
- * Helper de exemplo:
- * retorna um pequeno resumo da linha "Meta Frete 2026" e "Média (P+T)".
- *
- * Pode ser plugado em gráfico tipo "Meta vs Real (Total Máquinas)".
+ * Helper pequeno: resumo de Meta vs Média (Total Máquinas)
  */
 export async function loadResumoMaquinasMetaVsReal() {
   const { byTp } = await loadCustosTabelaGeral();
@@ -165,24 +161,20 @@ export async function loadResumoMaquinasMetaVsReal() {
 /**
  * Função usada pela tela <CustosMaquinas />
  *
- * Ela monta os objetos exatamente no formato esperado pelo componente:
- *
+ * Retorna:
  *  - grafico01MetaVsReal: [{ item, meta, mediaAtual }]
  *  - grafico02SomaCustos: [{ item, somaProprio, somaTerceiro, qtdFrete }]
  *  - grafico03Terceiros:  [{ freteiro, valor }]
  *  - grafico04Proprio:    [{ frota, valor }]
  *  - grafico05Munck:      [{ cidade, valor }]
- *
- * Por enquanto só alimentamos G01 e G02 com o bloco "ANO FISCAL - 2026 (GERAL)".
- * Os demais ficam vazios até você decidir como quer quebrar os dados.
  */
 export async function loadCustosMaquinas() {
-  const { byTp } = await loadCustosTabelaGeral();
+  const { rows, byTp } = await loadCustosTabelaGeral();
 
   const meta = byTp["Meta Frete 2026"] || {};
   const media = byTp["Média (P+T)"] || byTp["Media (P+T)"] || {};
 
-  // GRAFICO 01 – META VS REAL (TOTAL MÁQUINAS)
+  // ---------------- GRAFICO 01 – META VS REAL ----------------
   const metaTotal =
     toNumber(meta["Soma Proprio"]) + toNumber(meta["Soma Terceiro"]);
   const realTotal =
@@ -196,23 +188,65 @@ export async function loadCustosMaquinas() {
     },
   ];
 
-  // GRAFICO 02 – SOMA PROPRIO x TERCEIRO + QTD FRETE
-  // Usando linha "Média (P+T)" como base "real" de custos totais
+  // ---------------- GRAFICO 02 – SOMA PRÓPRIO x TERCEIRO + QTD FRETE ----------------
+  // Aqui uso a linha "Meta Frete 2026" como TOTAL ANUAL
+  const somaProprioTotal = toNumber(meta["Soma Proprio"]);
+  const somaTerceiroTotal = toNumber(meta["Soma Terceiro"]);
+  const qtdFreteTotal = toNumber(meta["Qtd Frete"]);
+
   const grafico02SomaCustos = [
     {
       item: "TOTAL MÁQUINAS",
-      somaProprio: toNumber(media["Soma Proprio"]),
-      somaTerceiro: toNumber(media["Soma Terceiro"]),
-      qtdFrete: toNumber(media["Qtd Frete"]),
+      somaProprio: somaProprioTotal,
+      somaTerceiro: somaTerceiroTotal,
+      qtdFrete: qtdFreteTotal,
     },
   ];
 
-  // Ainda não mapeamos os detalhes de TERCEIROS / FROTA / MUNCK
-  // com base nas colunas de MUNCK / MOTOBOY / TRANSPORTADORA,
-  // então deixo os gráficos 03, 04 e 05 vazios mas tipados certinho.
-  const grafico03Terceiros = [];
-  const grafico04Proprio = [];
-  const grafico05Munck = [];
+  // ---------------- GRAFICO 03 – TERCEIROS ----------------
+  // Usa colunas: TERCEIRO + Valor Total
+  const terceirosMap = {};
+  for (const r of rows) {
+    const nome = String(r["TERCEIRO"] || "").trim();
+    if (!nome) continue;
+    const valor = toNumber(r["Valor Total"]);
+    if (!valor) continue;
+    terceirosMap[nome] = (terceirosMap[nome] || 0) + valor;
+  }
+
+  const grafico03Terceiros = Object.entries(terceirosMap)
+    .map(([freteiro, valor]) => ({ freteiro, valor }))
+    .sort((a, b) => b.valor - a.valor);
+
+  // ---------------- GRAFICO 04 – FROTA PRÓPRIA ----------------
+  // Usa colunas: Responsável + VALOR
+  const frotaMap = {};
+  for (const r of rows) {
+    const frota = String(r["Responsável"] || "").trim();
+    if (!frota) continue;
+    const valor = toNumber(r["VALOR"]);
+    if (!valor) continue;
+    frotaMap[frota] = (frotaMap[frota] || 0) + valor;
+  }
+
+  const grafico04Proprio = Object.entries(frotaMap)
+    .map(([frota, valor]) => ({ frota, valor }))
+    .sort((a, b) => b.valor - a.valor);
+
+  // ---------------- GRAFICO 05 – MUNCK ----------------
+  // Usa colunas: MUNCK + primeiro "R$"
+  const munckMap = {};
+  for (const r of rows) {
+    const cidade = String(r["MUNCK"] || "").trim();
+    if (!cidade) continue;
+    const valor = toNumber(r["R$"]);
+    if (!valor) continue;
+    munckMap[cidade] = (munckMap[cidade] || 0) + valor;
+  }
+
+  const grafico05Munck = Object.entries(munckMap)
+    .map(([cidade, valor]) => ({ cidade, valor }))
+    .sort((a, b) => b.valor - a.valor);
 
   return {
     grafico01MetaVsReal,
@@ -224,21 +258,21 @@ export async function loadCustosMaquinas() {
 }
 
 /**
- * Stubs só pra não quebrar as telas de Peças e Frota
- * enquanto você não pluga os novos ranges da planilha nelas.
+ * Peças / Frota ainda dependem de outras guias (FRETE PEÇAS, VW DAF, etc).
+ * Por enquanto deixo stubs pra não quebrar as telas.
  */
 
 export async function loadCustosPecas() {
   return {
-    grafico06PecasCourierPorLoja: [],
+    grafico06MotoBoyPC: [],
     grafico07TranspPC: [],
+    grafico08PorMotoBoy: [],
+    grafico09PorTransportadora: [],
   };
 }
 
 export async function loadCustosFrota() {
   return {
-    grafico08PorMotoBoy: [],
-    grafico09PorTransportadora: [],
     grafico10GastosVW: [],
     grafico11GastosDAF: [],
     grafico12Aproveitamento: [],
