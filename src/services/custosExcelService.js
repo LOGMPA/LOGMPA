@@ -413,12 +413,18 @@ export async function loadCustosFrota() {
       grafico10GastosVW: [],
       grafico11GastosDAF: [],
       grafico12Aproveitamento: [],
+      graficoValorKm: [],
     };
   }
 
-  // CUSTOS DAF (Z/AA => índices 24/25)
+  // =========== 3º GRÁFICO: CUSTOS DAF ===========
+  // Nome:  Z5:Z15  -> índice 24
+  // Valor: AA5:AA15 -> índice 25
   const grafico11GastosDAF = [];
-  // CUSTOS VW  (AB/AC => índices 26/27)
+
+  // =========== 4º GRÁFICO: CUSTOS VW ===========
+  // Nome:  AB5:AB15 -> índice 26
+  // Valor: AC5:AC15 -> índice 27
   const grafico10GastosVW = [];
 
   for (let r = 1; r < matrix.length; r++) {
@@ -443,18 +449,46 @@ export async function loadCustosFrota() {
     }
   }
 
-  // APROVEITAMENTO FROTA (AK/AL => índices 35/36)
+  // =========== 2º GRÁFICO: VALOR APROX. VS KM RODADO ===========
+  // Nome das Barras: AD5:AD6 -> índice 28
+  // Valor:            AE5:AE6 -> índice 29
+  //
+  // (Se depois você quiser colocar KM separado, a gente pluga outra coluna aqui.)
+  const graficoValorKm = [];
+  for (let r = 1; r < matrix.length; r++) {
+    const row = matrix[r] || [];
+    const frota = String(row[28] || "").trim();
+    const valor = toNumber(row[29]);
+
+    if (!frota || !valor) continue;
+
+    graficoValorKm.push({
+      frota,
+      valor,
+    });
+  }
+
+  // =========== 1º GRÁFICO: APROVEITAMENTO DIÁRIO ===========
+  // Nome:  AK5:AK6 -> índice 35
+  // Valor: AL5:AL6 -> índice 36 (pode vir 0.59 ou 59)
   const grafico12Aproveitamento = [];
   for (let r = 1; r < matrix.length; r++) {
     const row = matrix[r] || [];
     const frota = String(row[35] || "").trim();
-    const valor = row[36];
-    const aproveitamento = typeof valor === "number" ? valor : toNumber(valor);
+    const bruto = row[36];
+
+    let aproveitamento = 0;
+    if (typeof bruto === "number") {
+      aproveitamento = bruto;
+    } else {
+      aproveitamento = toNumber(bruto);
+    }
+
     if (!frota || !aproveitamento) continue;
 
     grafico12Aproveitamento.push({
       frota,
-      aproveitamento,
+      aproveitamento, // pode ser 0.59 ou 59, tratamos no JSX
     });
   }
 
@@ -462,5 +496,6 @@ export async function loadCustosFrota() {
     grafico10GastosVW,
     grafico11GastosDAF,
     grafico12Aproveitamento,
+    graficoValorKm,
   };
 }
