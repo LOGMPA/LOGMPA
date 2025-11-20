@@ -4,6 +4,7 @@ import {
   BarChart,
   Bar,
   XAxis,
+  YAxis,
   Tooltip,
   ResponsiveContainer,
   Legend,
@@ -14,13 +15,13 @@ import {
 } from "recharts";
 import { loadCustosMaquinas } from "@/services/custosExcelService";
 
-// PALETA PRINCIPAL (Excel vibes)
+// PALETA PRINCIPAL
 const VERDE_ESCURO = "#2A5E20";
 const VERDE_MEDIO = "#387C2B";
 const AMARELO = "#FCDC01";
 const CREME = "#FFF5AB";
 
-// PALETA ANTIGA DA PIZZA (voltando como você pediu)
+// PALETA DA PIZZA (a que você gostou)
 const PIE_VERDE = "#007233";
 const PIE_AMARELO = "#FFC800";
 const PIE_VERDE_CLARO = "#76B947";
@@ -52,11 +53,10 @@ const toNumber = (value) => {
   }
 
   if (typeof value === "string") {
-    // tira R$, espaços e lixo, mantém dígitos, vírgula e hífen
     const cleaned = value
-      .replace(/[^\d,-]/g, "")
-      .replace(/\./g, "")
-      .replace(",", ".");
+      .replace(/[^\d,-]/g, "") // tira R$, espaço etc
+      .replace(/\./g, "") // remove separador de milhar
+      .replace(",", "."); // vírgula vira decimal
     const num = Number(cleaned);
     return Number.isNaN(num) ? 0 : num;
   }
@@ -67,7 +67,6 @@ const toNumber = (value) => {
 
 const formatCurrency = (value) => {
   const num = toNumber(value);
-  if (!num) return "R$ 0";
   return `R$ ${num.toLocaleString("pt-BR", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
@@ -111,7 +110,14 @@ export default function CustosMaquinas() {
 
   // G1
   const dadosGrafico01 = useMemo(
-    () => filterEmptyRows(grafico01MetaVsReal, ["meta", "mediaAtual"]),
+    () =>
+      filterEmptyRows(grafico01MetaVsReal, ["meta", "mediaAtual"]).map(
+        (item) => ({
+          ...item,
+          metaNum: toNumber(item.meta),
+          mediaNum: toNumber(item.mediaAtual),
+        })
+      ),
     [grafico01MetaVsReal]
   );
 
@@ -122,17 +128,22 @@ export default function CustosMaquinas() {
         "somaProprio",
         "somaTerceiro",
         "qtdFrete",
-      ]),
+      ]).map((item) => ({
+        ...item,
+        proprioNum: toNumber(item.somaProprio),
+        terceiroNum: toNumber(item.somaTerceiro),
+        qtdFreteNum: toNumber(item.qtdFrete),
+      })),
     [grafico02SomaCustos]
   );
 
-  // G3 – já normalizando valor e km pra número
+  // G3
   const dadosGrafico03 = useMemo(() => {
     const base = filterEmptyRows(grafico03Terceiros, ["valor", "km"]);
     return base.map((item) => ({
       ...item,
-      valorNumero: toNumber(item.valor),
-      kmNumero: toNumber(item.km),
+      valorNum: toNumber(item.valor),
+      kmNum: toNumber(item.km),
     }));
   }, [grafico03Terceiros]);
 
@@ -196,7 +207,7 @@ export default function CustosMaquinas() {
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      {/* 1º GRÁFICO – META VS REAL (agora em linha própria, sem eixo Y) */}
+      {/* ================= GRÁFICO 1 - META VS REAL ================= */}
       <Card className="shadow-sm lg:col-span-2">
         <CardHeader>
           <CardTitle
@@ -210,9 +221,9 @@ export default function CustosMaquinas() {
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={dadosGrafico01}
-              barCategoryGap={20}
-              barGap={-25}
-              margin={{ top: 25, right: 20, left: 10, bottom: 35 }}
+              barCategoryGap={35}
+              barGap={-18}
+              margin={{ top: 25, right: 30, left: 20, bottom: 35 }}
             >
               <XAxis
                 dataKey="item"
@@ -225,7 +236,13 @@ export default function CustosMaquinas() {
                   fill: VERDE_ESCURO,
                 }}
               />
-              {/* sem YAxis para tirar eixo numérico */}
+              <YAxis
+                hide
+                domain={[
+                  0,
+                  (dataMax) => dataMax * 1.25, // respiro no topo
+                ]}
+              />
               <Tooltip
                 formatter={(value) => formatCurrency(value)}
                 cursor={{ fill: "rgba(0,0,0,0.03)" }}
@@ -240,18 +257,20 @@ export default function CustosMaquinas() {
                   paddingBottom: 8,
                 }}
               />
+              {/* META - barra de fundo */}
               <Bar
-                dataKey="meta"
+                dataKey="metaNum"
                 name="Meta Frete 2026"
                 fill={VERDE_ESCURO}
-                barSize={40}
+                barSize={42}
                 radius={[4, 4, 0, 0]}
+                minPointSize={6}
               >
                 <LabelList
-                  dataKey="meta"
+                  dataKey="metaNum"
                   position="top"
-                  formatter={formatCurrency}
-                  offset={8}
+                  formatter={(v) => (v ? formatCurrency(v) : "")}
+                  offset={6}
                   style={{
                     fontSize: 11,
                     fontWeight: 700,
@@ -259,17 +278,19 @@ export default function CustosMaquinas() {
                   }}
                 />
               </Bar>
+              {/* MÉDIA - barra menor na frente */}
               <Bar
-                dataKey="mediaAtual"
+                dataKey="mediaNum"
                 name="Média (P+T)"
                 fill={AMARELO}
-                barSize={26}
+                barSize={28}
                 radius={[4, 4, 0, 0]}
+                minPointSize={6}
               >
                 <LabelList
-                  dataKey="mediaAtual"
+                  dataKey="mediaNum"
                   position="insideTop"
-                  formatter={formatCurrency}
+                  formatter={(v) => (v ? formatCurrency(v) : "")}
                   style={{
                     fontSize: 11,
                     fontWeight: 700,
@@ -282,7 +303,7 @@ export default function CustosMaquinas() {
         </CardContent>
       </Card>
 
-      {/* 2º GRÁFICO – CUSTO POR TIPO (também em linha própria, sem eixo Y) */}
+      {/* ================= GRÁFICO 2 - CUSTO POR TIPO ================= */}
       <Card className="shadow-sm lg:col-span-2">
         <CardHeader>
           <CardTitle
@@ -296,9 +317,9 @@ export default function CustosMaquinas() {
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={dadosGrafico02}
-              barCategoryGap={20}
+              barCategoryGap={35}
               barGap={0}
-              margin={{ top: 25, right: 20, left: 10, bottom: 35 }}
+              margin={{ top: 30, right: 30, left: 20, bottom: 35 }}
             >
               <XAxis
                 dataKey="item"
@@ -311,7 +332,13 @@ export default function CustosMaquinas() {
                   fill: VERDE_ESCURO,
                 }}
               />
-              {/* sem YAxis aqui também */}
+              <YAxis
+                hide
+                domain={[
+                  0,
+                  (dataMax) => dataMax * 1.25,
+                ]}
+              />
               <Tooltip
                 formatter={(value, name) => {
                   if (name === "Qtd Frete") return value;
@@ -330,17 +357,18 @@ export default function CustosMaquinas() {
                 }}
               />
               <Bar
-                dataKey="somaProprio"
+                dataKey="proprioNum"
                 name="Soma Próprio"
                 fill={VERDE_MEDIO}
                 barSize={40}
                 stackId="tipo"
                 radius={[4, 4, 0, 0]}
+                minPointSize={6}
               >
                 <LabelList
-                  dataKey="somaProprio"
+                  dataKey="proprioNum"
                   position="insideTop"
-                  formatter={formatCurrency}
+                  formatter={(v) => (v ? formatCurrency(v) : "")}
                   style={{
                     fontSize: 11,
                     fontWeight: 700,
@@ -349,17 +377,18 @@ export default function CustosMaquinas() {
                 />
               </Bar>
               <Bar
-                dataKey="somaTerceiro"
+                dataKey="terceiroNum"
                 name="Soma Terceiro"
                 fill={AMARELO}
                 barSize={40}
                 stackId="tipo"
                 radius={[4, 4, 0, 0]}
+                minPointSize={6}
               >
                 <LabelList
-                  dataKey="somaTerceiro"
+                  dataKey="terceiroNum"
                   position="insideTop"
-                  formatter={formatCurrency}
+                  formatter={(v) => (v ? formatCurrency(v) : "")}
                   style={{
                     fontSize: 11,
                     fontWeight: 700,
@@ -367,14 +396,15 @@ export default function CustosMaquinas() {
                   }}
                 />
               </Bar>
+              {/* Qtd Frete em cima da pilha */}
               <Bar
-                dataKey="qtdFrete"
+                dataKey="qtdFreteNum"
                 name="Qtd Frete"
                 fill="transparent"
                 isAnimationActive={false}
               >
                 <LabelList
-                  dataKey="qtdFrete"
+                  dataKey="qtdFreteNum"
                   position="top"
                   offset={10}
                   style={{
@@ -389,7 +419,7 @@ export default function CustosMaquinas() {
         </CardContent>
       </Card>
 
-      {/* 3º GRÁFICO – CUSTO COM TERCEIROS (maior, barra + valor dentro + km na base) */}
+      {/* ================= GRÁFICO 3 - CUSTO COM TERCEIROS ================= */}
       <Card className="shadow-sm lg:col-span-1">
         <CardHeader>
           <CardTitle
@@ -399,16 +429,31 @@ export default function CustosMaquinas() {
             TRANSPORTE MÁQUINAS - CUSTO COM TERCEIROS
           </CardTitle>
         </CardHeader>
-        <CardContent className="h-[420px]">
+        <CardContent className="h-[430px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={dadosGrafico03}
               layout="vertical"
-              barCategoryGap={12}
+              barCategoryGap={14}
               margin={{ left: 260, right: 40, top: 25, bottom: 25 }}
             >
-              {/* sem eixo numérico visível */}
-              <XAxis type="number" hide />
+              <XAxis
+                type="number"
+                hide
+                domain={[0, (dataMax) => dataMax * 1.15]}
+              />
+              <YAxis
+                dataKey="freteiro"
+                type="category"
+                width={240}
+                tickLine={false}
+                axisLine={false}
+                tick={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  fill: VERDE_ESCURO,
+                }}
+              />
               <Tooltip
                 formatter={(value, name) => {
                   if (name === "KM") return `${toNumber(value)} km`;
@@ -416,18 +461,18 @@ export default function CustosMaquinas() {
                 }}
                 cursor={{ fill: "rgba(0,0,0,0.03)" }}
               />
-              {/* nomes dos terceiros à esquerda */}
-              <LabelList />
+              {/* sem legenda, igual Excel */}
               <Bar
-                dataKey="valorNumero"
+                dataKey="valorNum"
                 name="Valor Total"
                 fill={VERDE_MEDIO}
                 barSize={26}
                 radius={[0, 4, 4, 0]}
+                minPointSize={8}
               >
                 {/* valor dentro da barra */}
                 <LabelList
-                  dataKey="valorNumero"
+                  dataKey="valorNum"
                   position="insideRight"
                   formatter={(v) => formatCurrency(v)}
                   style={{
@@ -436,9 +481,9 @@ export default function CustosMaquinas() {
                     fill: "#FFFFFF",
                   }}
                 />
-                {/* KM na base / ponta da barra */}
+                {/* KM na ponta / base da barra */}
                 <LabelList
-                  dataKey="kmNumero"
+                  dataKey="kmNum"
                   name="KM"
                   position="right"
                   offset={10}
@@ -455,7 +500,7 @@ export default function CustosMaquinas() {
         </CardContent>
       </Card>
 
-      {/* 4º GRÁFICO – UTILIZAÇÃO DE MUNCK (menor, com as cores antigas) */}
+      {/* ================= GRÁFICO 4 - UTILIZAÇÃO DE MUNCK (INTACTO) ================= */}
       <Card className="shadow-sm lg:col-span-1">
         <CardHeader>
           <CardTitle
@@ -465,7 +510,7 @@ export default function CustosMaquinas() {
             CUSTOS - UTILIZAÇÃO DE MUNCK
           </CardTitle>
         </CardHeader>
-        <CardContent className="h-80">
+        <CardContent className="h-96">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Tooltip formatter={(value) => formatCurrency(value)} />
@@ -475,7 +520,7 @@ export default function CustosMaquinas() {
                 nameKey="cidade"
                 cx="50%"
                 cy="55%"
-                outerRadius={110}
+                outerRadius={120}
                 labelLine={false}
                 label={renderPieLabel}
               >
