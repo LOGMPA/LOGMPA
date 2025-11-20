@@ -21,11 +21,10 @@ const VERDE_MEDIO = "#387C2B";
 const AMARELO = "#FCDC01";
 const CREME = "#FFF5AB";
 
-// PALETA DA PIZZA (a que você gostou)
+// PALETA DA PIZZA
 const PIE_VERDE = "#007233";
 const PIE_AMARELO = "#FFC800";
 const PIE_VERDE_CLARO = "#76B947";
-
 const PIE_COLORS = [
   PIE_AMARELO,
   PIE_VERDE,
@@ -34,7 +33,6 @@ const PIE_COLORS = [
   "#A1C935",
   "#265C1B",
 ];
-
 const PIE_LABEL_COLORS = [
   "#A66A00",
   "#00451C",
@@ -44,23 +42,18 @@ const PIE_LABEL_COLORS = [
   "#15380F",
 ];
 
-// normaliza qualquer coisa pra número
+// --------- HELPERS ---------
 const toNumber = (value) => {
   if (value === null || value === undefined || value === "") return 0;
-
-  if (typeof value === "number") {
-    return Number.isNaN(value) ? 0 : value;
-  }
-
+  if (typeof value === "number") return Number.isNaN(value) ? 0 : value;
   if (typeof value === "string") {
     const cleaned = value
-      .replace(/[^\d,-]/g, "") // tira R$, espaço etc
-      .replace(/\./g, "") // remove separador de milhar
-      .replace(",", "."); // vírgula vira decimal
+      .replace(/[^\d,-]/g, "")
+      .replace(/\./g, "")
+      .replace(",", ".");
     const num = Number(cleaned);
     return Number.isNaN(num) ? 0 : num;
   }
-
   const num = Number(value);
   return Number.isNaN(num) ? 0 : num;
 };
@@ -82,6 +75,81 @@ function filterEmptyRows(data, numericKeys) {
     })
   );
 }
+
+// label “top” que some quando valor é 0
+const TopCurrencyLabel = (props) => {
+  const { x, y, value, fill = "#65290B" } = props;
+  const num = toNumber(value);
+  if (!num) return null;
+  return (
+    <text
+      x={x}
+      y={y - 2}
+      textAnchor="middle"
+      fontSize={11}
+      fontWeight={700}
+      fill={fill}
+    >
+      {formatCurrency(num)}
+    </text>
+  );
+};
+
+// label dentro da barra
+const InsideCurrencyLabel = (props) => {
+  const { x, y, width, value, fill = "#FFFFFF" } = props;
+  const num = toNumber(value);
+  if (!num || !width) return null;
+  return (
+    <text
+      x={x + width / 2}
+      y={y + 14}
+      textAnchor="middle"
+      fontSize={11}
+      fontWeight={700}
+      fill={fill}
+    >
+      {formatCurrency(num)}
+    </text>
+  );
+};
+
+// label numérico top (Qtd Frete)
+const TopPlainLabel = (props) => {
+  const { x, y, value } = props;
+  if (value === null || value === undefined || value === "") return null;
+  return (
+    <text
+      x={x}
+      y={y - 4}
+      textAnchor="middle"
+      fontSize={11}
+      fontWeight={700}
+      fill={VERDE_ESCURO}
+    >
+      {value}
+    </text>
+  );
+};
+
+// label KM na ponta da barra horizontal
+const KmRightLabel = (props) => {
+  const { x, y, value } = props;
+  const num = toNumber(value);
+  if (!num) return null;
+  return (
+    <text
+      x={x + 8}
+      y={y + 6}
+      textAnchor="start"
+      fontSize={11}
+      fontWeight={700}
+      fill={AMARELO}
+    >
+      {`${num} km`}
+    </text>
+  );
+};
 
 export default function CustosMaquinas() {
   const [data, setData] = useState(null);
@@ -108,7 +176,7 @@ export default function CustosMaquinas() {
     grafico05Munck = [],
   } = data || {};
 
-  // G1
+  // --------- DATA PREPARADA ---------
   const dadosGrafico01 = useMemo(
     () =>
       filterEmptyRows(grafico01MetaVsReal, ["meta", "mediaAtual"]).map(
@@ -121,7 +189,6 @@ export default function CustosMaquinas() {
     [grafico01MetaVsReal]
   );
 
-  // G2
   const dadosGrafico02 = useMemo(
     () =>
       filterEmptyRows(grafico02SomaCustos, [
@@ -137,17 +204,16 @@ export default function CustosMaquinas() {
     [grafico02SomaCustos]
   );
 
-  // G3
-  const dadosGrafico03 = useMemo(() => {
-    const base = filterEmptyRows(grafico03Terceiros, ["valor", "km"]);
-    return base.map((item) => ({
-      ...item,
-      valorNum: toNumber(item.valor),
-      kmNum: toNumber(item.km),
-    }));
-  }, [grafico03Terceiros]);
+  const dadosGrafico03 = useMemo(
+    () =>
+      filterEmptyRows(grafico03Terceiros, ["valor", "km"]).map((item) => ({
+        ...item,
+        valorNum: toNumber(item.valor),
+        kmNum: toNumber(item.km),
+      })),
+    [grafico03Terceiros]
+  );
 
-  // G4
   const dadosGrafico05 = useMemo(
     () => filterEmptyRows(grafico05Munck, ["valor"]),
     [grafico05Munck]
@@ -205,9 +271,10 @@ export default function CustosMaquinas() {
     );
   }
 
+  // ========================= RENDER =========================
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      {/* ================= GRÁFICO 1 - META VS REAL ================= */}
+      {/* -------- GRÁFICO 1: META VS REAL -------- */}
       <Card className="shadow-sm lg:col-span-2">
         <CardHeader>
           <CardTitle
@@ -217,13 +284,13 @@ export default function CustosMaquinas() {
             TRANSPORTE MÁQUINAS - META VS REAL
           </CardTitle>
         </CardHeader>
-        <CardContent className="h-72">
+        <CardContent className="h-80">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={dadosGrafico01}
-              barCategoryGap={35}
+              barCategoryGap="40%"
               barGap={-18}
-              margin={{ top: 25, right: 30, left: 20, bottom: 35 }}
+              margin={{ top: 40, right: 40, left: 40, bottom: 35 }}
             >
               <XAxis
                 dataKey="item"
@@ -238,10 +305,7 @@ export default function CustosMaquinas() {
               />
               <YAxis
                 hide
-                domain={[
-                  0,
-                  (dataMax) => dataMax * 1.25, // respiro no topo
-                ]}
+                domain={[0, (dataMax) => dataMax * 1.2]}
               />
               <Tooltip
                 formatter={(value) => formatCurrency(value)}
@@ -257,53 +321,34 @@ export default function CustosMaquinas() {
                   paddingBottom: 8,
                 }}
               />
-              {/* META - barra de fundo */}
+              {/* META - fundo */}
               <Bar
                 dataKey="metaNum"
                 name="Meta Frete 2026"
                 fill={VERDE_ESCURO}
-                barSize={42}
+                barSize={44}
                 radius={[4, 4, 0, 0]}
                 minPointSize={6}
               >
-                <LabelList
-                  dataKey="metaNum"
-                  position="top"
-                  formatter={(v) => (v ? formatCurrency(v) : "")}
-                  offset={6}
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    fill: "#65290B",
-                  }}
-                />
+                <LabelList content={<TopCurrencyLabel />} />
               </Bar>
-              {/* MÉDIA - barra menor na frente */}
+              {/* MÉDIA - frente */}
               <Bar
                 dataKey="mediaNum"
                 name="Média (P+T)"
                 fill={AMARELO}
-                barSize={28}
+                barSize={30}
                 radius={[4, 4, 0, 0]}
                 minPointSize={6}
               >
-                <LabelList
-                  dataKey="mediaNum"
-                  position="insideTop"
-                  formatter={(v) => (v ? formatCurrency(v) : "")}
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    fill: VERDE_ESCURO,
-                  }}
-                />
+                <LabelList content={<InsideCurrencyLabel />} />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
 
-      {/* ================= GRÁFICO 2 - CUSTO POR TIPO ================= */}
+      {/* -------- GRÁFICO 2: CUSTO POR TIPO -------- */}
       <Card className="shadow-sm lg:col-span-2">
         <CardHeader>
           <CardTitle
@@ -313,13 +358,13 @@ export default function CustosMaquinas() {
             TRANSPORTE MÁQUINAS - CUSTO POR TIPO
           </CardTitle>
         </CardHeader>
-        <CardContent className="h-72">
+        <CardContent className="h-80">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={dadosGrafico02}
-              barCategoryGap={35}
+              barCategoryGap="40%"
               barGap={0}
-              margin={{ top: 30, right: 30, left: 20, bottom: 35 }}
+              margin={{ top: 40, right: 40, left: 40, bottom: 35 }}
             >
               <XAxis
                 dataKey="item"
@@ -334,10 +379,7 @@ export default function CustosMaquinas() {
               />
               <YAxis
                 hide
-                domain={[
-                  0,
-                  (dataMax) => dataMax * 1.25,
-                ]}
+                domain={[0, (dataMax) => dataMax * 1.2]}
               />
               <Tooltip
                 formatter={(value, name) => {
@@ -356,70 +398,45 @@ export default function CustosMaquinas() {
                   paddingBottom: 8,
                 }}
               />
+              {/* Próprio (fundo da pilha) */}
               <Bar
                 dataKey="proprioNum"
                 name="Soma Próprio"
                 fill={VERDE_MEDIO}
-                barSize={40}
+                barSize={44}
                 stackId="tipo"
                 radius={[4, 4, 0, 0]}
                 minPointSize={6}
               >
-                <LabelList
-                  dataKey="proprioNum"
-                  position="insideTop"
-                  formatter={(v) => (v ? formatCurrency(v) : "")}
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    fill: "#FFFFFF",
-                  }}
-                />
+                <LabelList content={<InsideCurrencyLabel />} />
               </Bar>
+              {/* Terceiro (topo) */}
               <Bar
                 dataKey="terceiroNum"
                 name="Soma Terceiro"
                 fill={AMARELO}
-                barSize={40}
+                barSize={44}
                 stackId="tipo"
                 radius={[4, 4, 0, 0]}
                 minPointSize={6}
               >
-                <LabelList
-                  dataKey="terceiroNum"
-                  position="insideTop"
-                  formatter={(v) => (v ? formatCurrency(v) : "")}
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    fill: VERDE_ESCURO,
-                  }}
-                />
+                <LabelList content={<InsideCurrencyLabel />} />
               </Bar>
-              {/* Qtd Frete em cima da pilha */}
+              {/* Qtd Frete como número solto em cima */}
               <Bar
                 dataKey="qtdFreteNum"
                 name="Qtd Frete"
                 fill="transparent"
                 isAnimationActive={false}
               >
-                <LabelList
-                  dataKey="qtdFreteNum"
-                  position="top"
-                  offset={10}
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    fill: VERDE_ESCURO,
-                  }}
-                />
+                <LabelList content={<TopPlainLabel />} />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
 
-      {/* ================= GRÁFICO 3 - CUSTO COM TERCEIROS ================= */}
+      {/* -------- GRÁFICO 3: CUSTO COM TERCEIROS -------- */}
       <Card className="shadow-sm lg:col-span-1">
         <CardHeader>
           <CardTitle
@@ -429,13 +446,13 @@ export default function CustosMaquinas() {
             TRANSPORTE MÁQUINAS - CUSTO COM TERCEIROS
           </CardTitle>
         </CardHeader>
-        <CardContent className="h-[430px]">
+        <CardContent className="h-[440px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={dadosGrafico03}
               layout="vertical"
-              barCategoryGap={14}
-              margin={{ left: 260, right: 40, top: 25, bottom: 25 }}
+              barCategoryGap={18}
+              margin={{ left: 260, right: 40, top: 30, bottom: 30 }}
             >
               <XAxis
                 type="number"
@@ -461,16 +478,16 @@ export default function CustosMaquinas() {
                 }}
                 cursor={{ fill: "rgba(0,0,0,0.03)" }}
               />
-              {/* sem legenda, igual Excel */}
+              {/* sem legenda, estilo Excel */}
               <Bar
                 dataKey="valorNum"
                 name="Valor Total"
                 fill={VERDE_MEDIO}
                 barSize={26}
                 radius={[0, 4, 4, 0]}
-                minPointSize={8}
+                minPointSize={10}
               >
-                {/* valor dentro da barra */}
+                {/* valor dentro */}
                 <LabelList
                   dataKey="valorNum"
                   position="insideRight"
@@ -481,18 +498,10 @@ export default function CustosMaquinas() {
                     fill: "#FFFFFF",
                   }}
                 />
-                {/* KM na ponta / base da barra */}
+                {/* km na ponta */}
                 <LabelList
                   dataKey="kmNum"
-                  name="KM"
-                  position="right"
-                  offset={10}
-                  formatter={(v) => `${toNumber(v)} km`}
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    fill: AMARELO,
-                  }}
+                  content={<KmRightLabel />}
                 />
               </Bar>
             </BarChart>
@@ -500,7 +509,7 @@ export default function CustosMaquinas() {
         </CardContent>
       </Card>
 
-      {/* ================= GRÁFICO 4 - UTILIZAÇÃO DE MUNCK (INTACTO) ================= */}
+      {/* -------- GRÁFICO 4: UTILIZAÇÃO DE MUNCK (INTACTO) -------- */}
       <Card className="shadow-sm lg:col-span-1">
         <CardHeader>
           <CardTitle
