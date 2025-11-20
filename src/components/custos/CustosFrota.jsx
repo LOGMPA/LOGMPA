@@ -18,6 +18,7 @@ import { loadCustosFrota } from "@/services/custosExcelService";
 const VERDE = "#007233";
 const VERDE_CLARO = "#76B947";
 const AMARELO = "#FFC800";
+
 const PIE_COLORS = [VERDE_CLARO, AMARELO];
 
 const formatCurrency = (value) => {
@@ -65,24 +66,30 @@ export default function CustosFrota() {
   }
 
   const {
-    graficoAproveitamento = [],
+    grafico10GastosVW = [],
+    grafico11GastosDAF = [],
+    grafico12Aproveitamento = [],
     graficoValorKm = [],
-    graficoCustosDAF = [],
-    graficoCustosVW = [],
   } = data;
 
-  const aproveitamentoData = (graficoAproveitamento || []).map((item) => ({
-    ...item,
-    percent: item.percent ?? item.aproveitamento ?? 0,
-  }));
+  // Normaliza o aproveitamento para 0–100
+  const aproveitamentoData = grafico12Aproveitamento.map((item) => {
+    let p = Number(item.aproveitamento) || 0;
+    if (p > 1) {
+      // provavelmente 59, 41, etc
+      return { ...item, percent: p };
+    }
+    // 0.59 -> 59%
+    return { ...item, percent: p * 100 };
+  });
 
   return (
     <div className="grid gap-4 lg:grid-cols-3">
-      {/* APROVEITAMENTO – PIZZA */}
+      {/* 1º – APROVEITAMENTO (PIZZA) */}
       <Card className="shadow-sm lg:col-span-1">
         <CardHeader>
           <CardTitle className="text-base font-semibold uppercase text-center">
-            APROVEITAMENTO
+            APROVEITAMENTO DIÁRIO DA FROTA - 8H/DIA
           </CardTitle>
         </CardHeader>
         <CardContent className="h-80">
@@ -98,10 +105,10 @@ export default function CustosFrota() {
                 nameKey="frota"
                 cx="50%"
                 cy="50%"
-                outerRadius={120}
+                outerRadius={110}
                 labelLine={false}
                 label={({ name, percent }) =>
-                  `${name} ${(percent * 100).toFixed(0)}%`
+                  `${name} ${percent.toFixed(0)}%`
                 }
               >
                 {aproveitamentoData.map((entry, index) => (
@@ -116,7 +123,7 @@ export default function CustosFrota() {
         </CardContent>
       </Card>
 
-      {/* VALOR x KM RODADO – HORIZONTAL */}
+      {/* 2º – VALOR APROXIMADO DE CUSTOS COM TRANSPORTE VS KM RODADO */}
       <Card className="shadow-sm lg:col-span-2">
         <CardHeader>
           <CardTitle className="text-base font-semibold uppercase">
@@ -126,7 +133,7 @@ export default function CustosFrota() {
         <CardContent className="h-80">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
-              data={graficoValorKm || []}
+              data={graficoValorKm}
               layout="vertical"
               margin={{ left: 140, right: 40, top: 10, bottom: 10 }}
             >
@@ -141,21 +148,18 @@ export default function CustosFrota() {
                 type="category"
                 tickLine={false}
                 axisLine={false}
-                tick={{ fontSize: 11 }}
+                tick={{ fontSize: 12 }}
               />
               <Tooltip
-                formatter={(value, name) => {
-                  if (name === "KM") return value;
-                  return formatCurrency(value);
-                }}
+                formatter={(value) => formatCurrency(value)}
                 cursor={{ fill: "rgba(0,0,0,0.03)" }}
               />
               <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar
                 dataKey="valor"
-                name="VALOR"
+                name="Valor (R$)"
                 fill={VERDE_CLARO}
-                barSize={24}
+                barSize={26}
                 radius={[0, 4, 4, 0]}
               >
                 <LabelList
@@ -165,24 +169,12 @@ export default function CustosFrota() {
                   style={{ fontSize: 11, fontWeight: 600, fill: "#000" }}
                 />
               </Bar>
-              <Bar
-                dataKey="km"
-                name="KM"
-                fill="transparent"
-                isAnimationActive={false}
-              >
-                <LabelList
-                  dataKey="km"
-                  position="right"
-                  style={{ fontSize: 11, fontWeight: 600, fill: "#000" }}
-                />
-              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
 
-      {/* CUSTOS DAF 2026 */}
+      {/* 3º – CUSTOS DAF 2026 */}
       <Card className="shadow-sm lg:col-span-1">
         <CardHeader>
           <CardTitle className="text-base font-semibold uppercase text-center">
@@ -191,7 +183,7 @@ export default function CustosFrota() {
         </CardHeader>
         <CardContent className="h-64">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={graficoCustosDAF || []} barCategoryGap={40}>
+            <BarChart data={grafico11GastosDAF} barCategoryGap={40}>
               <XAxis
                 dataKey="item"
                 tickLine={false}
@@ -207,11 +199,12 @@ export default function CustosFrota() {
                 formatter={(value) => formatCurrency(value)}
                 cursor={{ fill: "rgba(0,0,0,0.03)" }}
               />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar
                 dataKey="valor"
                 name="Valor (R$)"
                 fill={VERDE}
-                barSize={32}
+                barSize={30}
                 radius={[4, 4, 0, 0]}
               >
                 <LabelList
@@ -226,7 +219,7 @@ export default function CustosFrota() {
         </CardContent>
       </Card>
 
-      {/* CUSTOS VW 2026 */}
+      {/* 4º – CUSTOS VW 2026 */}
       <Card className="shadow-sm lg:col-span-1">
         <CardHeader>
           <CardTitle className="text-base font-semibold uppercase text-center">
@@ -235,7 +228,7 @@ export default function CustosFrota() {
         </CardHeader>
         <CardContent className="h-64">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={graficoCustosVW || []} barCategoryGap={40}>
+            <BarChart data={grafico10GastosVW} barCategoryGap={40}>
               <XAxis
                 dataKey="item"
                 tickLine={false}
@@ -251,11 +244,12 @@ export default function CustosFrota() {
                 formatter={(value) => formatCurrency(value)}
                 cursor={{ fill: "rgba(0,0,0,0.03)" }}
               />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar
                 dataKey="valor"
                 name="Valor (R$)"
                 fill={VERDE_CLARO}
-                barSize={32}
+                barSize={30}
                 radius={[4, 4, 0, 0]}
               >
                 <LabelList
