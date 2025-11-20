@@ -9,10 +9,10 @@ const EXCEL_URL = `${BASE_URL}data/LOGISTICA2026.xlsx`;
 // Guia usada para os gráficos de custos
 const SHEET_NAME = "CUSTOS";
 
-// Range da parte GERAL do ano fiscal (tabelão horizontal)
+// Range fixo usado para todos os gráficos
 // Cabeçalho: B4:AL4
-// Conteúdo:  B5:AL20
-const RANGE_GERAL = "B4:AL20";
+// Dados:     B5:AL15
+const RANGE_GERAL = "B4:AL15";
 
 const READ_OPTS = {
   type: "array",
@@ -23,8 +23,10 @@ const READ_OPTS = {
 // Conversão básica pra número (aceita R$, ponto, vírgula, etc)
 function toNumber(v) {
   if (v == null || v === "") return 0;
-  if (typeof v === "number") return v;
-
+  if (typeof v === "number") {
+    if (Number.isNaN(v)) return 0;
+    return v;
+  }
   if (typeof v === "string") {
     const s = v
       .replace(/R\$\s*/gi, "")
@@ -34,17 +36,19 @@ function toNumber(v) {
     const n = Number(s);
     return Number.isNaN(n) ? 0 : n;
   }
-
-  return 0;
+  const n = Number(v);
+  return Number.isNaN(n) ? 0 : n;
 }
 
 /**
- * Carrega a guia CUSTOS da LOGISTICA2026.xlsx e devolve:
- *  - header: nomes de coluna (B4:AL4, já deduplicados)
- *  - rows: linhas de dados (B5:AL20) como objetos
- *  - byTp: map por valor de "TP" (Meta Frete 2026, Média (P+T), etc)
+ * Lê a guia CUSTOS e devolve a matriz B4:AL15.
+ *
+ * matrix[0] => linha 4 (cabeçalho)
+ * matrix[1] => linha 5
+ * ...
+ * matrix[11] => linha 15
  */
-export async function loadCustosTabelaGeral() {
+async function loadCustosMatrix() {
   console.info("[custosExcel] Buscando LOGISTICA2026.xlsx em:", EXCEL_URL);
 
   const resp = await fetch(EXCEL_URL, { cache: "no-store" });
@@ -68,7 +72,6 @@ export async function loadCustosTabelaGeral() {
     throw new Error(msg);
   }
 
-  // Lê só o range B4:AL20 como matriz (linha/coluna)
   const matrix = XLSX.utils.sheet_to_json(ws, {
     header: 1,
     defval: "",
@@ -76,12 +79,21 @@ export async function loadCustosTabelaGeral() {
     range: RANGE_GERAL,
   });
 
-  if (!matrix.length) {
-    console.warn("[custosExcel] Range B4:AL20 vazio na guia CUSTOS.");
-    return { header: [], rows: [], byTp: {} };
+  if (!matrix || !matrix.length) {
+    console.warn("[custosExcel] Range", RANGE_GERAL, "vazio na guia CUSTOS.");
+    return [];
   }
 
-  // Primeira linha do range = cabeçalho (linha 4 da planilha)
+  return matrix;
+}
+
+/**
+ * Versão genérica em forma de tabela (caso algum outro lugar use).
+ */
+export async function loadCustosTabelaGeral() {
+  const matrix = await loadCustosMatrix();
+  if (!matrix.length) return { header: [], rows: [], byTp: {} };
+
   const headerRaw = matrix[0].map((c) => String(c || "").trim());
 
   // Deduplica cabeçalhos repetidos (R$, MOTOBOY, TRANSPORTADORA, etc)
@@ -98,7 +110,6 @@ export async function loadCustosTabelaGeral() {
     return key;
   });
 
-  // Linhas reais de dados (B5:AL20)
   const dataRows = matrix.slice(1);
 
   const rows = dataRows
@@ -110,16 +121,12 @@ export async function loadCustosTabelaGeral() {
       });
       return obj;
     })
-    // joga fora linha totalmente vazia (sem TP e sem qualquer outro valor)
     .filter((r) => {
-      const hasTp = String(r["TP"] || "").trim().length > 0;
-      const hasOther = Object.keys(r).some(
-        (k) => k !== "TP" && r[k] != null && String(r[k]).trim() !== ""
-      );
-      return hasTp || hasOther;
+      const values = Object.values(r);
+      const hasAny = values.some((v) => v != null && String(v).trim() !== "");
+      return hasAny;
     });
 
-  // Mapa por TP (Meta Frete 2026, Média (P+T), etc)
   const byTp = {};
   for (const r of rows) {
     const tp = String(r["TP"] || "").trim();
@@ -127,30 +134,22 @@ export async function loadCustosTabelaGeral() {
     byTp[tp] = r;
   }
 
-  console.info(
-    "[custosExcel] Tabela geral carregada:",
-    rows.length,
-    "linhas,",
-    header.length,
-    "colunas."
-  );
-
   return { header, rows, byTp };
 }
 
 /**
- * Helper pequeno: resumo de Meta vs Média (Total Máquinas)
+ * Pequeno helper: resumo Meta vs Média (TOTAL MÁQUINAS)
  */
 export async function loadResumoMaquinasMetaVsReal() {
-  const { byTp } = await loadCustosTabelaGeral();
+  const { grafico01MetaVsReal } = await loadCustosMaquinas();
 
-  const meta = byTp["Meta Frete 2026"] || {};
-  const media = byTp["Média (P+T)"] || byTp["Media (P+T)"] || {};
+  let metaTotal = 0;
+  let realTotal = 0;
 
-  const metaTotal =
-    toNumber(meta["Soma Proprio"]) + toNumber(meta["Soma Terceiro"]);
-  const realTotal =
-    toNumber(media["Soma Proprio"]) + toNumber(media["Soma Terceiro"]);
+  for (const item of grafico01MetaVsReal) {
+    metaTotal += toNumber(item.meta);
+    realTotal += toNumber(item.mediaAtual);
+  }
 
   return [
     { label: "Meta Frete 2026", value: metaTotal },
@@ -159,122 +158,309 @@ export async function loadResumoMaquinasMetaVsReal() {
 }
 
 /**
- * Função usada pela tela <CustosMaquinas />
+ * ============================
+ *  TELA: CUSTOS MÁQUINAS
+ * ============================
  *
- * Retorna:
- *  - grafico01MetaVsReal: [{ item, meta, mediaAtual }]
- *  - grafico02SomaCustos: [{ item, somaProprio, somaTerceiro, qtdFrete }]
- *  - grafico03Terceiros:  [{ freteiro, valor }]
- *  - grafico04Proprio:    [{ frota, valor }]
- *  - grafico05Munck:      [{ cidade, valor }]
+ * 1º gráfico: TRANSPORTE MÁQUINAS - META VS REAL
+ *   - Colunas: C4:H4
+ *   - Meta Frete 2026: C5:H5
+ *   - Média (P+T):     C6:H6
+ *
+ * 2º gráfico: TRANSPORTE MÁQUINAS - CUSTO POR TIPO
+ *   - Nome (Equipamento): I5:I10
+ *   - Soma Proprio:       J5:J10
+ *   - Soma Terceiro:      K5:J10
+ *   - Qtd Frete:          L5:L10
+ *
+ * 3º gráfico: TRANSPORTE MÁQUINAS - CUSTO COM TERCEIROS
+ *   - Nome:       M5:M15
+ *   - Valor Total: N5:N15
+ *   - Total KM:    O5:O15
+ *
+ * 4º gráfico: CUSTOS - UTILIZAÇÃO DE MUNCK
+ *   - Nome:  P5:P15
+ *   - Valor: Q5:Q15
  */
 export async function loadCustosMaquinas() {
-  const { rows, byTp } = await loadCustosTabelaGeral();
+  const matrix = await loadCustosMatrix();
+  if (!matrix.length) {
+    return {
+      grafico01MetaVsReal: [],
+      grafico02SomaCustos: [],
+      grafico03Terceiros: [],
+      grafico04Proprio: [],
+      grafico05Munck: [],
+    };
+  }
 
-  const meta = byTp["Meta Frete 2026"] || {};
-  const media = byTp["Média (P+T)"] || byTp["Media (P+T)"] || {};
+  const header = matrix[0];
 
-  // ---------------- GRAFICO 01 – META VS REAL ----------------
-  const metaTotal =
-    toNumber(meta["Soma Proprio"]) + toNumber(meta["Soma Terceiro"]);
-  const realTotal =
-    toNumber(media["Soma Proprio"]) + toNumber(media["Soma Terceiro"]);
+  // 1º gráfico – META vs REAL (C/H, linhas 5 e 6 => índices 1 e 2)
+  const rowMeta = matrix[1] || [];
+  const rowMedia = matrix[2] || [];
+  const grafico01MetaVsReal = [];
 
-  const grafico01MetaVsReal = [
-    {
-      item: "TOTAL MÁQUINAS",
-      meta: metaTotal,
-      mediaAtual: realTotal,
-    },
-  ];
+  for (let idx = 1; idx <= 6 && idx < header.length; idx++) {
+    const label = String(header[idx] || "").trim();
+    if (!label) continue;
 
-  // ---------------- GRAFICO 02 – SOMA PRÓPRIO x TERCEIRO + QTD FRETE ----------------
-  // Aqui uso a linha "Meta Frete 2026" como TOTAL ANUAL
-  const somaProprioTotal = toNumber(meta["Soma Proprio"]);
-  const somaTerceiroTotal = toNumber(meta["Soma Terceiro"]);
-  const qtdFreteTotal = toNumber(meta["Qtd Frete"]);
+    const meta = toNumber(rowMeta[idx]);
+    const mediaAtual = toNumber(rowMedia[idx]);
 
-  const grafico02SomaCustos = [
-    {
-      item: "TOTAL MÁQUINAS",
-      somaProprio: somaProprioTotal,
-      somaTerceiro: somaTerceiroTotal,
-      qtdFrete: qtdFreteTotal,
-    },
-  ];
+    if (!meta && !mediaAtual) continue;
 
-  // ---------------- GRAFICO 03 – TERCEIROS ----------------
-  // Usa colunas: TERCEIRO + Valor Total
-  const terceirosMap = {};
-  for (const r of rows) {
-    const nome = String(r["TERCEIRO"] || "").trim();
+    grafico01MetaVsReal.push({
+      item: label,
+      meta,
+      mediaAtual,
+    });
+  }
+
+  // 2º gráfico – CUSTO POR TIPO (linhas 5 a 10)
+  // Equipamento: col I => índice 7
+  // Soma Proprio: col J => índice 8
+  // Soma Terceiro: col K => índice 9
+  // Qtd Frete: col L => índice 10
+  const grafico02SomaCustos = [];
+
+  for (let r = 1; r < matrix.length && r <= 6; r++) {
+    const row = matrix[r] || [];
+    const nome = String(row[7] || "").trim();
     if (!nome) continue;
-    const valor = toNumber(r["Valor Total"]);
-    if (!valor) continue;
-    terceirosMap[nome] = (terceirosMap[nome] || 0) + valor;
+
+    const somaProprio = toNumber(row[8]);
+    const somaTerceiro = toNumber(row[9]);
+    const qtdFrete = toNumber(row[10]);
+
+    if (!somaProprio && !somaTerceiro && !qtdFrete) continue;
+
+    grafico02SomaCustos.push({
+      item: nome,
+      somaProprio,
+      somaTerceiro,
+      qtdFrete,
+    });
   }
 
-  const grafico03Terceiros = Object.entries(terceirosMap)
-    .map(([freteiro, valor]) => ({ freteiro, valor }))
-    .sort((a, b) => b.valor - a.valor);
+  // 3º gráfico – CUSTO COM TERCEIROS
+  // Nome (TERCEIRO): col M => índice 11
+  // Valor Total: col N => índice 12
+  // Total KM: col O => índice 13
+  const grafico03Terceiros = [];
 
-  // ---------------- GRAFICO 04 – FROTA PRÓPRIA ----------------
-  // Usa colunas: Responsável + VALOR
-  const frotaMap = {};
-  for (const r of rows) {
-    const frota = String(r["Responsável"] || "").trim();
-    if (!frota) continue;
-    const valor = toNumber(r["VALOR"]);
-    if (!valor) continue;
-    frotaMap[frota] = (frotaMap[frota] || 0) + valor;
+  for (let r = 1; r < matrix.length; r++) {
+    const row = matrix[r] || [];
+    const nome = String(row[11] || "").trim();
+    if (!nome) continue;
+
+    const valor = toNumber(row[12]);
+    const km = toNumber(row[13]);
+
+    if (!valor && !km) continue;
+
+    grafico03Terceiros.push({
+      freteiro: nome,
+      valor,
+      km,
+    });
   }
 
-  const grafico04Proprio = Object.entries(frotaMap)
-    .map(([frota, valor]) => ({ frota, valor }))
-    .sort((a, b) => b.valor - a.valor);
+  // 4º gráfico – UTILIZAÇÃO DE MUNCK (pizza)
+  // Nome (cidade): col P => índice 14
+  // Valor (R$):    col Q => índice 15
+  const grafico05Munck = [];
 
-  // ---------------- GRAFICO 05 – MUNCK ----------------
-  // Usa colunas: MUNCK + primeiro "R$"
-  const munckMap = {};
-  for (const r of rows) {
-    const cidade = String(r["MUNCK"] || "").trim();
+  for (let r = 1; r < matrix.length; r++) {
+    const row = matrix[r] || [];
+    const cidade = String(row[14] || "").trim();
     if (!cidade) continue;
-    const valor = toNumber(r["R$"]);
-    if (!valor) continue;
-    munckMap[cidade] = (munckMap[cidade] || 0) + valor;
-  }
 
-  const grafico05Munck = Object.entries(munckMap)
-    .map(([cidade, valor]) => ({ cidade, valor }))
-    .sort((a, b) => b.valor - a.valor);
+    const valor = toNumber(row[15]);
+    if (!valor) continue;
+
+    grafico05Munck.push({
+      cidade,
+      valor,
+    });
+  }
 
   return {
     grafico01MetaVsReal,
     grafico02SomaCustos,
     grafico03Terceiros,
-    grafico04Proprio,
+    // por enquanto não temos um gráfico específico de frota própria aqui
+    grafico04Proprio: [],
     grafico05Munck,
   };
 }
 
 /**
- * Peças / Frota ainda dependem de outras guias (FRETE PEÇAS, VW DAF, etc).
- * Por enquanto deixo stubs pra não quebrar as telas.
+ * ============================
+ *  TELA: CUSTOS PEÇAS
+ * ============================
+ *
+ * 1º gráfico: TRANSPORTE PEÇAS - CUSTO COURIER (LOJA)
+ *   - Nome:  R5:R15
+ *   - Valor: S5:S15
+ *
+ * 2º gráfico: TRANSPORTE PEÇAS - CUSTO TRANSPORTADORA (LOJA)
+ *   - Nome:  T5:T15
+ *   - Valor: U5:U15
+ *
+ * 3º gráfico: TRANSPORTE PEÇAS - CUSTO COURIER
+ *   - Nome:  V5:V15
+ *   - Valor: W5:W15
+ *
+ * 4º gráfico: TRANSPORTE PEÇAS - CUSTO TRANSPORTADORA
+ *   - Nome:  X5:X15
+ *   - Valor: Y5:Y15
  */
-
 export async function loadCustosPecas() {
+  const matrix = await loadCustosMatrix();
+  if (!matrix.length) {
+    return {
+      grafico06MotoBoyPC: [],
+      grafico07TranspPC: [],
+      grafico08PorMotoBoy: [],
+      grafico09PorTransportadora: [],
+    };
+  }
+
+  const grafico06MotoBoyPC = [];
+  const grafico07TranspPC = [];
+  const grafico08PorMotoBoy = [];
+  const grafico09PorTransportadora = [];
+
+  for (let r = 1; r < matrix.length; r++) {
+    const row = matrix[r] || [];
+
+    // 1) Courier por loja (R/S => índices 16/17)
+    const cidadeCourier = String(row[16] || "").trim();
+    const valorCourier = toNumber(row[17]);
+    if (cidadeCourier && valorCourier) {
+      grafico06MotoBoyPC.push({
+        cidade: cidadeCourier,
+        valor: valorCourier,
+      });
+    }
+
+    // 2) Transportadora por loja (T/U => índices 18/19)
+    const cidadeTransp = String(row[18] || "").trim();
+    const valorTransp = toNumber(row[19]);
+    if (cidadeTransp && valorTransp) {
+      grafico07TranspPC.push({
+        cidade: cidadeTransp,
+        valor: valorTransp,
+      });
+    }
+
+    // 3) Courier (por empresa) (V/W => índices 20/21)
+    const empCourier = String(row[20] || "").trim();
+    const valorEmpCourier = toNumber(row[21]);
+    if (empCourier && valorEmpCourier) {
+      grafico08PorMotoBoy.push({
+        empresa: empCourier,
+        valor: valorEmpCourier,
+      });
+    }
+
+    // 4) Transportadora (por empresa) (X/Y => índices 22/23)
+    const empTransp = String(row[22] || "").trim();
+    const valorEmpTransp = toNumber(row[23]);
+    if (empTransp && valorEmpTransp) {
+      grafico09PorTransportadora.push({
+        empresa: empTransp,
+        valor: valorEmpTransp,
+      });
+    }
+  }
+
   return {
-    grafico06MotoBoyPC: [],
-    grafico07TranspPC: [],
-    grafico08PorMotoBoy: [],
-    grafico09PorTransportadora: [],
+    grafico06MotoBoyPC,
+    grafico07TranspPC,
+    grafico08PorMotoBoy,
+    grafico09PorTransportadora,
   };
 }
 
+/**
+ * ============================
+ *  TELA: CUSTOS FROTA
+ * ============================
+ *
+ * 1º gráfico: APROVEITAMENTO DIÁRIO DA FROTA - 8H/DIA
+ *   - Nome:  AK5:AK6
+ *   - Valor: AL5:AL6 (percentual)
+ *
+ * 2º gráfico (planejado): VALOR APROXIMADO DE CUSTOS VS KM RODADO
+ *   - Nome:  AD5:AD6
+ *   - Valor: AE5:AE6
+ *   (se quiser usar depois, dá pra expor aqui também)
+ *
+ * 3º gráfico: CUSTOS DAF
+ *   - Nome:  Z5:Z15
+ *   - Valor: AA5:AA15
+ *
+ * 4º gráfico: CUSTOS VW
+ *   - Nome:  AB5:AB15
+ *   - Valor: AC5:AC15
+ */
 export async function loadCustosFrota() {
+  const matrix = await loadCustosMatrix();
+  if (!matrix.length) {
+    return {
+      grafico10GastosVW: [],
+      grafico11GastosDAF: [],
+      grafico12Aproveitamento: [],
+    };
+  }
+
+  // CUSTOS DAF (Z/AA => índices 24/25)
+  const grafico11GastosDAF = [];
+  // CUSTOS VW  (AB/AC => índices 26/27)
+  const grafico10GastosVW = [];
+
+  for (let r = 1; r < matrix.length; r++) {
+    const row = matrix[r] || [];
+
+    const dafNome = String(row[24] || "").trim();
+    const dafValor = toNumber(row[25]);
+    if (dafNome && dafValor) {
+      grafico11GastosDAF.push({
+        item: dafNome,
+        valor: dafValor,
+      });
+    }
+
+    const vwNome = String(row[26] || "").trim();
+    const vwValor = toNumber(row[27]);
+    if (vwNome && vwValor) {
+      grafico10GastosVW.push({
+        item: vwNome,
+        valor: vwValor,
+      });
+    }
+  }
+
+  // APROVEITAMENTO FROTA (AK/AL => índices 35/36)
+  const grafico12Aproveitamento = [];
+  for (let r = 1; r < matrix.length; r++) {
+    const row = matrix[r] || [];
+    const frota = String(row[35] || "").trim();
+    const valor = row[36];
+    const aproveitamento = typeof valor === "number" ? valor : toNumber(valor);
+    if (!frota || !aproveitamento) continue;
+
+    grafico12Aproveitamento.push({
+      frota,
+      aproveitamento,
+    });
+  }
+
   return {
-    grafico10GastosVW: [],
-    grafico11GastosDAF: [],
-    grafico12Aproveitamento: [],
+    grafico10GastosVW,
+    grafico11GastosDAF,
+    grafico12Aproveitamento,
   };
 }
