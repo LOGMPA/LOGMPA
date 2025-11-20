@@ -32,8 +32,8 @@ const formatCurrency = (value) => {
   const num = Number(value);
   if (Number.isNaN(num)) return "";
   return `R$ ${num.toLocaleString("pt-BR", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   })}`;
 };
 
@@ -104,14 +104,13 @@ export default function CustosMaquinas() {
     cx,
     cy,
     midAngle,
-    innerRadius,
     outerRadius,
     percent,
     index,
     value,
   }) => {
     const RADIAN = Math.PI / 180;
-    const radius = outerRadius * 1.1;
+    const radius = outerRadius * 1.15;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
     const item = dadosGrafico05[index];
@@ -123,7 +122,8 @@ export default function CustosMaquinas() {
         fill="#000"
         textAnchor={x > cx ? "start" : "end"}
         dominantBaseline="central"
-        fontSize={11}
+        fontSize={12}
+        fontWeight={700}
       >
         {item?.cidade} {formatCurrency(value)}{" "}
         {`(${(percent * 100).toFixed(0)}%)`}
@@ -149,26 +149,32 @@ export default function CustosMaquinas() {
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      {/* GRAFICO 01 – META VS REAL */}
+      {/* GRAFICO 01 – META VS REAL (colunas empilhadas) */}
       <Card className="shadow-sm">
         <CardHeader>
-          <CardTitle className="text-base font-semibold uppercase">
+          <CardTitle className="text-base font-semibold uppercase text-black">
             TRANSPORTE MÁQUINAS - META VS REAL
           </CardTitle>
         </CardHeader>
         <CardContent className="h-72">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={dadosGrafico01} barCategoryGap={40}>
+            <BarChart
+              data={dadosGrafico01}
+              barCategoryGap={15}
+              barGap={0}
+              margin={{ top: 20, right: 20, left: 10, bottom: 30 }}
+            >
               <XAxis
                 dataKey="item"
                 tickLine={false}
                 axisLine={false}
-                tick={{ fontSize: 12 }}
+                tick={{ fontSize: 12, fontWeight: 700, fill: "#000" }}
+                interval={0}
               />
               <YAxis
                 tickLine={false}
                 axisLine={false}
-                tick={{ fontSize: 12 }}
+                tick={{ fontSize: 12, fontWeight: 700, fill: "#000" }}
               />
               <Tooltip
                 formatter={(value) => formatCurrency(value)}
@@ -177,34 +183,41 @@ export default function CustosMaquinas() {
               <Legend
                 verticalAlign="top"
                 align="right"
-                wrapperStyle={{ fontSize: 11, marginTop: -10 }}
+                wrapperStyle={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "#000",
+                  paddingBottom: 8,
+                }}
               />
               <Bar
                 dataKey="meta"
                 name="META FRETE 2026"
                 fill={AMARELO}
-                barSize={40}
+                barSize={35}
                 radius={[4, 4, 0, 0]}
+                stackId="metaReal"
               >
                 <LabelList
                   dataKey="meta"
                   position="top"
                   formatter={formatCurrency}
-                  style={{ fontSize: 11, fontWeight: 600, fill: "#000" }}
+                  style={{ fontSize: 11, fontWeight: 700, fill: "#000" }}
                 />
               </Bar>
               <Bar
                 dataKey="mediaAtual"
                 name="MÉDIA (P+T)"
                 fill={VERDE}
-                barSize={40}
+                barSize={35}
                 radius={[4, 4, 0, 0]}
+                stackId="metaReal"
               >
                 <LabelList
                   dataKey="mediaAtual"
-                  position="top"
+                  position="insideTop"
                   formatter={formatCurrency}
-                  style={{ fontSize: 11, fontWeight: 600, fill: "#000" }}
+                  style={{ fontSize: 11, fontWeight: 700, fill: "#FFFFFF" }}
                 />
               </Bar>
             </BarChart>
@@ -212,26 +225,32 @@ export default function CustosMaquinas() {
         </CardContent>
       </Card>
 
-      {/* GRAFICO 02 – CUSTO POR TIPO */}
+      {/* GRAFICO 02 – CUSTO POR TIPO (colunas empilhadas + qtd frete em cima) */}
       <Card className="shadow-sm">
         <CardHeader>
-          <CardTitle className="text-base font-semibold uppercase">
+          <CardTitle className="text-base font-semibold uppercase text-black">
             TRANSPORTE MÁQUINAS - CUSTO POR TIPO
           </CardTitle>
         </CardHeader>
         <CardContent className="h-72">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={dadosGrafico02} barCategoryGap={40}>
+            <BarChart
+              data={dadosGrafico02}
+              barCategoryGap={15}
+              barGap={0}
+              margin={{ top: 20, right: 20, left: 10, bottom: 30 }}
+            >
               <XAxis
                 dataKey="item"
                 tickLine={false}
                 axisLine={false}
-                tick={{ fontSize: 12 }}
+                tick={{ fontSize: 12, fontWeight: 700, fill: "#000" }}
+                interval={0}
               />
               <YAxis
                 tickLine={false}
                 axisLine={false}
-                tick={{ fontSize: 12 }}
+                tick={{ fontSize: 12, fontWeight: 700, fill: "#000" }}
               />
               <Tooltip
                 formatter={(value, name) => {
@@ -243,36 +262,44 @@ export default function CustosMaquinas() {
               <Legend
                 verticalAlign="top"
                 align="right"
-                wrapperStyle={{ fontSize: 11, marginTop: -10 }}
+                wrapperStyle={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "#000",
+                  paddingBottom: 8,
+                }}
               />
               <Bar
                 dataKey="somaProprio"
                 name="SOMA PRÓPRIO"
                 fill={VERDE}
-                barSize={40}
+                barSize={35}
                 radius={[4, 4, 0, 0]}
+                stackId="tipo"
               >
                 <LabelList
                   dataKey="somaProprio"
                   position="insideTop"
                   formatter={formatCurrency}
-                  style={{ fontSize: 11, fontWeight: 600, fill: "#FFFFFF" }}
+                  style={{ fontSize: 11, fontWeight: 700, fill: "#FFFFFF" }}
                 />
               </Bar>
               <Bar
                 dataKey="somaTerceiro"
                 name="SOMA TERCEIRO"
                 fill={AMARELO}
-                barSize={40}
+                barSize={35}
                 radius={[4, 4, 0, 0]}
+                stackId="tipo"
               >
                 <LabelList
                   dataKey="somaTerceiro"
                   position="insideTop"
                   formatter={formatCurrency}
-                  style={{ fontSize: 11, fontWeight: 600, fill: "#000000" }}
+                  style={{ fontSize: 11, fontWeight: 700, fill: "#000000" }}
                 />
               </Bar>
+              {/* QTD FRETE – número solto no topo da coluna empilhada */}
               <Bar
                 dataKey="qtdFrete"
                 name="QTD FRETE"
@@ -282,7 +309,7 @@ export default function CustosMaquinas() {
                 <LabelList
                   dataKey="qtdFrete"
                   position="top"
-                  style={{ fontSize: 11, fontWeight: 600, fill: "#000" }}
+                  style={{ fontSize: 11, fontWeight: 700, fill: "#000" }}
                 />
               </Bar>
             </BarChart>
@@ -290,32 +317,34 @@ export default function CustosMaquinas() {
         </CardContent>
       </Card>
 
-      {/* GRAFICO 03 – CUSTO COM TERCEIROS */}
-      <Card className="shadow-sm">
+      {/* GRAFICO 03 – CUSTO COM TERCEIROS (barra horizontal, km dentro) */}
+      <Card className="shadow-sm lg:col-span-1">
         <CardHeader>
-          <CardTitle className="text-base font-semibold uppercase">
+          <CardTitle className="text-base font-semibold uppercase text-black">
             TRANSPORTE MÁQUINAS - CUSTO COM TERCEIROS
           </CardTitle>
         </CardHeader>
-        <CardContent className="h-80">
+        <CardContent className="h-96">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={dadosGrafico03}
               layout="vertical"
-              margin={{ left: 120, right: 30, top: 10, bottom: 10 }}
+              barCategoryGap={12}
+              margin={{ left: 220, right: 40, top: 20, bottom: 20 }}
             >
               <XAxis
                 type="number"
                 tickLine={false}
                 axisLine={false}
-                tick={{ fontSize: 12 }}
+                tick={{ fontSize: 12, fontWeight: 700, fill: "#000" }}
               />
               <YAxis
                 dataKey="freteiro"
                 type="category"
                 tickLine={false}
                 axisLine={false}
-                tick={{ fontSize: 11 }}
+                tick={{ fontSize: 12, fontWeight: 700, fill: "#000" }}
+                width={200}
               />
               <Tooltip
                 formatter={(value, name) => {
@@ -324,19 +353,21 @@ export default function CustosMaquinas() {
                 }}
                 cursor={{ fill: "rgba(0,0,0,0.03)" }}
               />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
+              <Legend
+                wrapperStyle={{ fontSize: 11, fontWeight: 700, color: "#000" }}
+              />
               <Bar
                 dataKey="valor"
                 name="Valor Total (R$)"
                 fill={VERDE_CLARO}
-                barSize={24}
+                barSize={26}
                 radius={[0, 4, 4, 0]}
               >
                 <LabelList
                   dataKey="valor"
                   position="insideRight"
                   formatter={formatCurrency}
-                  style={{ fontSize: 11, fontWeight: 600, fill: "#FFFFFF" }}
+                  style={{ fontSize: 11, fontWeight: 700, fill: "#FFFFFF" }}
                 />
               </Bar>
               <Bar
@@ -347,8 +378,8 @@ export default function CustosMaquinas() {
               >
                 <LabelList
                   dataKey="km"
-                  position="right"
-                  style={{ fontSize: 11, fontWeight: 600, fill: "#000" }}
+                  position="insideLeft"
+                  style={{ fontSize: 11, fontWeight: 700, fill: "#000" }}
                 />
               </Bar>
             </BarChart>
@@ -356,14 +387,14 @@ export default function CustosMaquinas() {
         </CardContent>
       </Card>
 
-      {/* GRAFICO 04 – UTILIZAÇÃO DE MUNCK */}
-      <Card className="shadow-sm">
+      {/* GRAFICO 04 – UTILIZAÇÃO DE MUNCK (pizza) */}
+      <Card className="shadow-sm lg:col-span-1">
         <CardHeader>
-          <CardTitle className="text-base font-semibold uppercase text-center">
+          <CardTitle className="text-base font-semibold uppercase text-center text-black">
             CUSTOS - UTILIZAÇÃO DE MUNCK
           </CardTitle>
         </CardHeader>
-        <CardContent className="h-80">
+        <CardContent className="h-96">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Tooltip formatter={(value) => formatCurrency(value)} />
