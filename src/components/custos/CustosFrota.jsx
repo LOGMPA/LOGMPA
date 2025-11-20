@@ -8,8 +8,27 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  LabelList,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts";
 import { loadCustosFrota } from "@/services/custosExcelService";
+
+const VERDE = "#007233";
+const VERDE_CLARO = "#76B947";
+const AMARELO = "#FFC800";
+const PIE_COLORS = [VERDE_CLARO, AMARELO];
+
+const formatCurrency = (value) => {
+  if (value === null || value === undefined || value === "") return "";
+  const num = Number(value);
+  if (Number.isNaN(num)) return "";
+  return `R$ ${num.toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+};
 
 export default function CustosFrota() {
   const [data, setData] = useState(null);
@@ -46,84 +65,206 @@ export default function CustosFrota() {
   }
 
   const {
-    grafico10GastosVW,
-    grafico11GastosDAF,
-    grafico12Aproveitamento,
+    graficoAproveitamento = [],
+    graficoValorKm = [],
+    graficoCustosDAF = [],
+    graficoCustosVW = [],
   } = data;
 
-  // Converter aproveitamento para porcentagem legível
-  const aproveitamentoData = grafico12Aproveitamento.map((item) => ({
+  const aproveitamentoData = (graficoAproveitamento || []).map((item) => ({
     ...item,
-    aproveitamentoPercent: (item.aproveitamento || 0) * 100,
+    percent: item.percent ?? item.aproveitamento ?? 0,
   }));
 
   return (
     <div className="grid gap-4 lg:grid-cols-3">
-      {/* GRAFICO 10 – GASTOS VW */}
+      {/* APROVEITAMENTO – PIZZA */}
       <Card className="shadow-sm lg:col-span-1">
         <CardHeader>
-          <CardTitle className="text-base font-semibold">
-            Gastos Frota Própria - Caminhão VW ATV6639
+          <CardTitle className="text-base font-semibold uppercase text-center">
+            APROVEITAMENTO
           </CardTitle>
         </CardHeader>
         <CardContent className="h-80">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={grafico10GastosVW}>
-              <XAxis dataKey="item" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="valor" name="Valor (R$)" />
-            </BarChart>
+            <PieChart>
+              <Tooltip
+                formatter={(value) => `${Number(value).toFixed(0)}%`}
+                labelFormatter={() => ""}
+              />
+              <Pie
+                data={aproveitamentoData}
+                dataKey="percent"
+                nameKey="frota"
+                cx="50%"
+                cy="50%"
+                outerRadius={120}
+                labelLine={false}
+                label={({ name, percent }) =>
+                  `${name} ${(percent * 100).toFixed(0)}%`
+                }
+              >
+                {aproveitamentoData.map((entry, index) => (
+                  <Cell
+                    key={`cell-aprov-${index}`}
+                    fill={PIE_COLORS[index % PIE_COLORS.length]}
+                  />
+                ))}
+              </Pie>
+            </PieChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
 
-      {/* GRAFICO 11 – GASTOS DAF */}
-      <Card className="shadow-sm lg:col-span-1">
+      {/* VALOR x KM RODADO – HORIZONTAL */}
+      <Card className="shadow-sm lg:col-span-2">
         <CardHeader>
-          <CardTitle className="text-base font-semibold">
-            Gastos Frota Própria - Caminhão DAF SDY9A72
+          <CardTitle className="text-base font-semibold uppercase">
+            VALOR APROXIMADO DE CUSTOS COM TRANSPORTE VS KM RODADO
           </CardTitle>
         </CardHeader>
         <CardContent className="h-80">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={grafico11GastosDAF}>
-              <XAxis dataKey="item" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="valor" name="Valor (R$)" />
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
-
-      {/* GRAFICO 12 – APROVEITAMENTO FROTA */}
-      <Card className="shadow-sm lg:col-span-1">
-        <CardHeader>
-          <CardTitle className="text-base font-semibold">
-            Aproveitamento Frota Própria
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={aproveitamentoData}>
-              <XAxis dataKey="frota" />
-              <YAxis />
+            <BarChart
+              data={graficoValorKm || []}
+              layout="vertical"
+              margin={{ left: 140, right: 40, top: 10, bottom: 10 }}
+            >
+              <XAxis
+                type="number"
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 12 }}
+              />
+              <YAxis
+                dataKey="frota"
+                type="category"
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 11 }}
+              />
               <Tooltip
                 formatter={(value, name) => {
-                  if (name === "Aproveitamento (%)") {
-                    return [`${value.toFixed(2)}%`, name];
-                  }
-                  return [value, name];
+                  if (name === "KM") return value;
+                  return formatCurrency(value);
                 }}
+                cursor={{ fill: "rgba(0,0,0,0.03)" }}
               />
-              <Legend />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar
-                dataKey="aproveitamentoPercent"
-                name="Aproveitamento (%)"
+                dataKey="valor"
+                name="VALOR"
+                fill={VERDE_CLARO}
+                barSize={24}
+                radius={[0, 4, 4, 0]}
+              >
+                <LabelList
+                  dataKey="valor"
+                  position="insideRight"
+                  formatter={formatCurrency}
+                  style={{ fontSize: 11, fontWeight: 600, fill: "#000" }}
+                />
+              </Bar>
+              <Bar
+                dataKey="km"
+                name="KM"
+                fill="transparent"
+                isAnimationActive={false}
+              >
+                <LabelList
+                  dataKey="km"
+                  position="right"
+                  style={{ fontSize: 11, fontWeight: 600, fill: "#000" }}
+                />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      {/* CUSTOS DAF 2026 */}
+      <Card className="shadow-sm lg:col-span-1">
+        <CardHeader>
+          <CardTitle className="text-base font-semibold uppercase text-center">
+            CUSTOS DAF 2026
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={graficoCustosDAF || []} barCategoryGap={40}>
+              <XAxis
+                dataKey="item"
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 11 }}
               />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 11 }}
+              />
+              <Tooltip
+                formatter={(value) => formatCurrency(value)}
+                cursor={{ fill: "rgba(0,0,0,0.03)" }}
+              />
+              <Bar
+                dataKey="valor"
+                name="Valor (R$)"
+                fill={VERDE}
+                barSize={32}
+                radius={[4, 4, 0, 0]}
+              >
+                <LabelList
+                  dataKey="valor"
+                  position="top"
+                  formatter={formatCurrency}
+                  style={{ fontSize: 11, fontWeight: 600, fill: "#000" }}
+                />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      {/* CUSTOS VW 2026 */}
+      <Card className="shadow-sm lg:col-span-1">
+        <CardHeader>
+          <CardTitle className="text-base font-semibold uppercase text-center">
+            CUSTOS VW 2026
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={graficoCustosVW || []} barCategoryGap={40}>
+              <XAxis
+                dataKey="item"
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 11 }}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 11 }}
+              />
+              <Tooltip
+                formatter={(value) => formatCurrency(value)}
+                cursor={{ fill: "rgba(0,0,0,0.03)" }}
+              />
+              <Bar
+                dataKey="valor"
+                name="Valor (R$)"
+                fill={VERDE_CLARO}
+                barSize={32}
+                radius={[4, 4, 0, 0]}
+              >
+                <LabelList
+                  dataKey="valor"
+                  position="top"
+                  formatter={formatCurrency}
+                  style={{ fontSize: 11, fontWeight: 600, fill: "#000" }}
+                />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
