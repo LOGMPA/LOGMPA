@@ -72,7 +72,6 @@ export default function CustosMaquinas() {
     grafico01MetaVsReal = [],
     grafico02SomaCustos = [],
     grafico03Terceiros = [],
-    grafico04Proprio = [],
     grafico05Munck = [],
   } = data || {};
 
@@ -92,13 +91,8 @@ export default function CustosMaquinas() {
   );
 
   const dadosGrafico03 = useMemo(
-    () => filterEmptyRows(grafico03Terceiros, ["valor"]),
+    () => filterEmptyRows(grafico03Terceiros, ["valor", "km"]),
     [grafico03Terceiros]
-  );
-
-  const dadosGrafico04 = useMemo(
-    () => filterEmptyRows(grafico04Proprio, ["valor"]),
-    [grafico04Proprio]
   );
 
   const dadosGrafico05 = useMemo(
@@ -324,7 +318,10 @@ export default function CustosMaquinas() {
                 tick={{ fontSize: 11 }}
               />
               <Tooltip
-                formatter={(value) => formatCurrency(value)}
+                formatter={(value, name) => {
+                  if (name === "Total KM") return value;
+                  return formatCurrency(value);
+                }}
                 cursor={{ fill: "rgba(0,0,0,0.03)" }}
               />
               <Legend wrapperStyle={{ fontSize: 11 }} />
@@ -342,55 +339,16 @@ export default function CustosMaquinas() {
                   style={{ fontSize: 11, fontWeight: 600, fill: "#FFFFFF" }}
                 />
               </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
-
-      {/* GRAFICO 04 – CUSTO FROTA PRÓPRIA */}
-      <Card className="shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-base font-semibold uppercase">
-            TRANSPORTE MÁQUINAS - CUSTO FROTA PRÓPRIA
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={dadosGrafico04}
-              layout="vertical"
-              margin={{ left: 80, right: 30, top: 10, bottom: 10 }}
-            >
-              <XAxis
-                type="number"
-                tickLine={false}
-                axisLine={false}
-                tick={{ fontSize: 12 }}
-              />
-              <YAxis
-                dataKey="frota"
-                type="category"
-                tickLine={false}
-                axisLine={false}
-                tick={{ fontSize: 11 }}
-              />
-              <Tooltip
-                formatter={(value) => formatCurrency(value)}
-                cursor={{ fill: "rgba(0,0,0,0.03)" }}
-              />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar
-                dataKey="valor"
-                name="Valor (R$)"
-                fill={VERDE}
-                barSize={26}
-                radius={[0, 4, 4, 0]}
+                dataKey="km"
+                name="Total KM"
+                fill="transparent"
+                isAnimationActive={false}
               >
                 <LabelList
-                  dataKey="valor"
-                  position="insideRight"
-                  formatter={formatCurrency}
-                  style={{ fontSize: 11, fontWeight: 600, fill: "#FFFFFF" }}
+                  dataKey="km"
+                  position="right"
+                  style={{ fontSize: 11, fontWeight: 600, fill: "#000" }}
                 />
               </Bar>
             </BarChart>
@@ -398,14 +356,14 @@ export default function CustosMaquinas() {
         </CardContent>
       </Card>
 
-      {/* GRAFICO 05 – UTILIZAÇÃO DE MUNCK */}
-      <Card className="shadow-sm lg:col-span-2">
+      {/* GRAFICO 04 – UTILIZAÇÃO DE MUNCK */}
+      <Card className="shadow-sm">
         <CardHeader>
           <CardTitle className="text-base font-semibold uppercase text-center">
             CUSTOS - UTILIZAÇÃO DE MUNCK
           </CardTitle>
         </CardHeader>
-        <CardContent className="h-96">
+        <CardContent className="h-80">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Tooltip formatter={(value) => formatCurrency(value)} />
