@@ -122,7 +122,7 @@ const KmRightLabel = (props) => {
   );
 };
 
-// rótulo em caixinha para valores dentro de barra (gráfico 2)
+// (ainda deixei esse helper, caso você queira reaproveitar depois)
 const InsideCurrencyLabel = (props) => {
   const { x, y, width, height, value, fill = "#FFFFFF", bgColor } = props;
   const num = toNumber(value);
@@ -138,10 +138,8 @@ const InsideCurrencyLabel = (props) => {
   let boxY;
 
   if (height > boxHeight + 6) {
-    // dentro da barra
     boxY = y + 4;
   } else {
-    // pouco valor -> sobe um pouco
     boxY = y - boxHeight - 4;
   }
 
@@ -173,13 +171,13 @@ const InsideCurrencyLabel = (props) => {
   );
 };
 
-// ======== LABELS ESPECÍFICOS DO GRÁFICO 1 ========
+// ======== LABELS ESPECÍFICOS DO GRÁFICO 1/2 ========
 
-// Meta: caixinha verde acima da barra
+// Meta (verde): caixinha acima, alinhada à ESQUERDA da coluna
 const MetaLabelBoxG1 = (props) => {
-  const { x, y, value } = props;
+  const { x, y, width, value } = props;
   const num = toNumber(value);
-  if (!num) return null;
+  if (!num || !width) return null;
 
   const label = formatCurrency(num);
   const paddingX = 8;
@@ -187,7 +185,9 @@ const MetaLabelBoxG1 = (props) => {
   const charWidth = 6;
   const boxWidth = label.length * charWidth + paddingX * 2;
 
-  const boxX = x - boxWidth / 2;
+  const barLeft = x;
+  const centerX = barLeft + boxWidth / 2 + 4; // 4px de folga da borda esquerda
+  const boxX = centerX - boxWidth / 2;
   const boxY = y - boxHeight - 4;
 
   return (
@@ -202,7 +202,7 @@ const MetaLabelBoxG1 = (props) => {
         fill={VERDE_ESCURO}
       />
       <text
-        x={x}
+        x={centerX}
         y={boxY + boxHeight / 2 + 4}
         textAnchor="middle"
         fontSize={11}
@@ -215,7 +215,7 @@ const MetaLabelBoxG1 = (props) => {
   );
 };
 
-// Média: caixinha amarela dentro ou logo acima da barra
+// Média (amarelo): caixinha dentro / topo, alinhada à DIREITA da coluna
 const MediaLabelBoxG1 = (props) => {
   const { x, y, width, height, value } = props;
   const num = toNumber(value);
@@ -227,16 +227,22 @@ const MediaLabelBoxG1 = (props) => {
   const charWidth = 6;
   const boxWidth = label.length * charWidth + paddingX * 2;
 
-  const centerX = x + width / 2;
+  const barLeft = x;
+  const barRight = x + width;
+
+  // tenta alinhar à direita da barra; se a barra for muito estreita, centraliza
+  const enoughWidth = width > boxWidth + 8;
+  const centerX = enoughWidth
+    ? barRight - boxWidth / 2 - 4
+    : barLeft + width / 2;
+
   const boxX = centerX - boxWidth / 2;
 
   let boxY;
   if (height > boxHeight + 8) {
-    // dentro da barra
-    boxY = y + 4;
+    boxY = y + 4; // dentro da barra
   } else {
-    // barra muito baixinha -> sobe
-    boxY = y - boxHeight - 4;
+    boxY = y - boxHeight - 4; // acima
   }
 
   const textY = boxY + boxHeight / 2 + 4;
@@ -421,7 +427,7 @@ export default function CustosMaquinas() {
               />
               <YAxis
                 hide
-                scale="sqrt" // deixa as colunas menos “torre vs formiga”
+                scale="sqrt" // aproxima as alturas
                 domain={[0, (dataMax) => dataMax * 1.2]}
               />
               <Tooltip
@@ -438,7 +444,7 @@ export default function CustosMaquinas() {
                   paddingBottom: 8,
                 }}
               />
-              {/* Meta - coluna de fundo com rótulo caixinha verde */}
+              {/* Meta - caixinha verde mais à esquerda */}
               <Bar
                 dataKey="metaNum"
                 name="Meta Frete 2026"
@@ -449,7 +455,7 @@ export default function CustosMaquinas() {
               >
                 <LabelList content={<MetaLabelBoxG1 />} />
               </Bar>
-              {/* Média - coluna menor na frente com caixinha amarela */}
+              {/* Média - caixinha amarela mais à direita */}
               <Bar
                 dataKey="mediaNum"
                 name="Média (P+T)"
@@ -465,7 +471,7 @@ export default function CustosMaquinas() {
         </CardContent>
       </Card>
 
-      {/* ========== GRÁFICO 2 - CUSTO POR TIPO ========== */}
+      {/* ========== GRÁFICO 2 - CUSTO POR TIPO (mesma lógica de rótulo) ========== */}
       <Card className="shadow-sm lg:col-span-2">
         <CardHeader>
           <CardTitle
@@ -512,7 +518,7 @@ export default function CustosMaquinas() {
                   paddingBottom: 8,
                 }}
               />
-              {/* Próprio (fundo) */}
+              {/* Próprio (verde) com label à esquerda da pilha */}
               <Bar
                 dataKey="proprioNum"
                 name="Soma Próprio"
@@ -522,16 +528,9 @@ export default function CustosMaquinas() {
                 radius={[4, 4, 0, 0]}
                 minPointSize={6}
               >
-                <LabelList
-                  content={
-                    <InsideCurrencyLabel
-                      fill="#FFFFFF"
-                      bgColor="rgba(0,0,0,0.25)"
-                    />
-                  }
-                />
+                <LabelList content={<MetaLabelBoxG1 />} />
               </Bar>
-              {/* Terceiro (topo) */}
+              {/* Terceiro (amarelo) com label à direita da pilha */}
               <Bar
                 dataKey="terceiroNum"
                 name="Soma Terceiro"
@@ -541,16 +540,9 @@ export default function CustosMaquinas() {
                 radius={[4, 4, 0, 0]}
                 minPointSize={6}
               >
-                <LabelList
-                  content={
-                    <InsideCurrencyLabel
-                      fill={VERDE_ESCURO}
-                      bgColor="rgba(255,255,255,0.8)"
-                    />
-                  }
-                />
+                <LabelList content={<MediaLabelBoxG1 />} />
               </Bar>
-              {/* Qtd Frete em cima da pilha */}
+              {/* Qtd Frete solta no topo */}
               <Bar
                 dataKey="qtdFreteNum"
                 name="Qtd Frete"
