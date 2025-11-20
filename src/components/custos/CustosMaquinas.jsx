@@ -18,7 +18,14 @@ import { loadCustosMaquinas } from "@/services/custosExcelService";
 const VERDE = "#007233";
 const AMARELO = "#FFC800";
 const VERDE_CLARO = "#76B947";
-const PIE_COLORS = [AMARELO, VERDE, VERDE_CLARO, "#4A7729", "#A1C935", "#265C1B"];
+const PIE_COLORS = [
+  AMARELO,
+  VERDE,
+  VERDE_CLARO,
+  "#4A7729",
+  "#A1C935",
+  "#265C1B",
+];
 
 const formatCurrency = (value) => {
   if (value === null || value === undefined || value === "") return "";
@@ -30,27 +37,27 @@ const formatCurrency = (value) => {
   })}`;
 };
 
-// ignora linhas em que TODOS os campos numéricos estão vazios/null/NaN
 function filterEmptyRows(data, numericKeys) {
   if (!Array.isArray(data)) return [];
   return data.filter((item) =>
     numericKeys.some((key) => {
       const v = item[key];
       if (v === 0) return true;
-      return v !== null && v !== undefined && v !== "" && !Number.isNaN(Number(v));
+      return (
+        v !== null && v !== undefined && v !== "" && !Number.isNaN(Number(v))
+      );
     })
   );
 }
 
 export default function CustosMaquinas() {
   const [data, setData] = useState(null);
-  const [status, setStatus] = useState("loading"); // loading | ok | error
+  const [status, setStatus] = useState("loading");
 
   useEffect(() => {
     async function fetchData() {
       try {
         const res = await loadCustosMaquinas();
-        console.log("Custos Máquinas (bruto):", res);
         setData(res);
         setStatus("ok");
       } catch (err) {
@@ -61,7 +68,6 @@ export default function CustosMaquinas() {
     fetchData();
   }, []);
 
-  // sempre declara hooks ANTES de qualquer return
   const {
     grafico01MetaVsReal = [],
     grafico02SomaCustos = [],
@@ -114,7 +120,6 @@ export default function CustosMaquinas() {
     const radius = outerRadius * 1.1;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
-
     const item = dadosGrafico05[index];
 
     return (
@@ -126,12 +131,12 @@ export default function CustosMaquinas() {
         dominantBaseline="central"
         fontSize={11}
       >
-        {item?.cidade} {formatCurrency(value)} {`(${(percent * 100).toFixed(0)}%)`}
+        {item?.cidade} {formatCurrency(value)}{" "}
+        {`(${(percent * 100).toFixed(0)}%)`}
       </text>
     );
   };
 
-  // AGORA os returns vêm DEPOIS de todos os hooks
   if (status === "loading") {
     return (
       <div className="text-sm text-slate-500">
@@ -154,7 +159,7 @@ export default function CustosMaquinas() {
       <Card className="shadow-sm">
         <CardHeader>
           <CardTitle className="text-base font-semibold uppercase">
-            CUSTOS MÁQUINAS 2026 - META VS REAL
+            TRANSPORTE MÁQUINAS - META VS REAL
           </CardTitle>
         </CardHeader>
         <CardContent className="h-72">
@@ -196,7 +201,7 @@ export default function CustosMaquinas() {
               </Bar>
               <Bar
                 dataKey="mediaAtual"
-                name="MÉDIA ATUAL (P+T)"
+                name="MÉDIA (P+T)"
                 fill={VERDE}
                 barSize={40}
                 radius={[4, 4, 0, 0]}
@@ -213,11 +218,11 @@ export default function CustosMaquinas() {
         </CardContent>
       </Card>
 
-      {/* GRAFICO 02 – SOMA PROPRIO x TERCEIRO + QTD FRETE */}
+      {/* GRAFICO 02 – CUSTO POR TIPO */}
       <Card className="shadow-sm">
         <CardHeader>
           <CardTitle className="text-base font-semibold uppercase">
-            CUSTOS MÁQUINAS 2026 - SOMA TOTAL DOS TRANSPORTES
+            TRANSPORTE MÁQUINAS - CUSTO POR TIPO
           </CardTitle>
         </CardHeader>
         <CardContent className="h-72">
@@ -291,11 +296,11 @@ export default function CustosMaquinas() {
         </CardContent>
       </Card>
 
-      {/* GRAFICO 03 – TERCEIROS (HORIZONTAL) */}
+      {/* GRAFICO 03 – CUSTO COM TERCEIROS */}
       <Card className="shadow-sm">
         <CardHeader>
           <CardTitle className="text-base font-semibold uppercase">
-            CUSTOS MÁQUINAS - TERCEIROS
+            TRANSPORTE MÁQUINAS - CUSTO COM TERCEIROS
           </CardTitle>
         </CardHeader>
         <CardContent className="h-80">
@@ -325,7 +330,7 @@ export default function CustosMaquinas() {
               <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar
                 dataKey="valor"
-                name="Valor (R$)"
+                name="Valor Total (R$)"
                 fill={VERDE_CLARO}
                 barSize={24}
                 radius={[0, 4, 4, 0]}
@@ -342,11 +347,11 @@ export default function CustosMaquinas() {
         </CardContent>
       </Card>
 
-      {/* GRAFICO 04 – FROTA PRÓPRIA (HORIZONTAL) */}
+      {/* GRAFICO 04 – CUSTO FROTA PRÓPRIA */}
       <Card className="shadow-sm">
         <CardHeader>
           <CardTitle className="text-base font-semibold uppercase">
-            CUSTOS MÁQUINAS - FROTA PRÓPRIA
+            TRANSPORTE MÁQUINAS - CUSTO FROTA PRÓPRIA
           </CardTitle>
         </CardHeader>
         <CardContent className="h-80">
@@ -393,11 +398,11 @@ export default function CustosMaquinas() {
         </CardContent>
       </Card>
 
-      {/* GRAFICO 05 – MUNCK (PIZZA) */}
+      {/* GRAFICO 05 – UTILIZAÇÃO DE MUNCK */}
       <Card className="shadow-sm lg:col-span-2">
         <CardHeader>
           <CardTitle className="text-base font-semibold uppercase text-center">
-            CUSTOS COM MUNCK - 2026
+            CUSTOS - UTILIZAÇÃO DE MUNCK
           </CardTitle>
         </CardHeader>
         <CardContent className="h-96">
