@@ -7,7 +7,6 @@ import {
   Bar,
   XAxis,
   YAxis,
-  CartesianGrid,
   Tooltip,
   ResponsiveContainer,
   LabelList,
@@ -63,7 +62,7 @@ const canonCidade = (txt) => MAP_CANON.get(NORM(txt)) || null;
 
 /* ========= Cores ========= */
 // bloco Normal (verde claro)
-const COR_PROP = "#BBF7D0"; // green-200 vibe
+const COR_PROP = "#BBF7D0"; // green-200
 // bloco Demonstração (amarelo)
 const COR_TERC = "#FDE68A"; // amber-200
 // badge azul da quantidade
@@ -71,7 +70,6 @@ const BADGE_BG = "#BFDBFE"; // blue-200
 const BADGE_TEXT = "#1D4ED8"; // blue-700
 // total em azul escuro
 const TOTAL_COLOR = "#1D4ED8"; // blue-700
-const GRID_LIGHT = "#E2E8F0";
 
 /* ========= Labels custom ========= */
 function QtdBadge({ viewBox, value }) {
@@ -80,7 +78,7 @@ function QtdBadge({ viewBox, value }) {
   const w = 40;
   const h = 22;
   const cx = x + width / 2 - w / 2;
-  const cy = y - h - 8; // mais espaço
+  const cy = y - h - 8;
   return (
     <g>
       <rect x={cx} y={cy} rx={6} ry={6} width={w} height={h} fill={BADGE_BG} />
@@ -102,7 +100,7 @@ function TotalLabel({ viewBox, value }) {
   if (value == null || !viewBox) return null;
   const { x, y, width } = viewBox;
   const cx = x + width / 2;
-  const cy = y - 40; // sobe bem pra dar respiro
+  const cy = y - 40;
   return (
     <text
       x={cx}
@@ -151,12 +149,11 @@ export default function PainelLogistica() {
     },
   };
 
-  /* ========= Helper de Suspenso ========= */
   const isSuspenso = (s) =>
     typeof s._status_up === "string" &&
     s._status_up.toUpperCase().includes("SUSPENSO");
 
-  /* ========= Contagem de status (inclui (D), exclui SUSPENSO) ========= */
+  /* ========= Contagem de status ========= */
   const contagemStatus = useMemo(() => {
     const base = solicitacoes.filter((s) => !isSuspenso(s));
     return {
@@ -167,7 +164,7 @@ export default function PainelLogistica() {
     };
   }, [solicitacoes]);
 
-  /* ========= Listas por status (inclui (D), exclui SUSPENSO) ========= */
+  /* ========= Listas por status ========= */
   const recebidos = useMemo(
     () =>
       solicitacoes
@@ -204,7 +201,7 @@ export default function PainelLogistica() {
     [solicitacoes]
   );
 
-  /* ========= Gráfico: Custos: Transportes Regulares vs Demonstrações (Concluídos) ========= */
+  /* ========= Gráfico: Custos Regulares vs Demonstrações ========= */
   const dadosCidadesColuna = useMemo(() => {
     const somaNormal = Object.fromEntries(CIDADES.map((c) => [c, 0]));
     const somaDemo = Object.fromEntries(CIDADES.map((c) => [c, 0]));
@@ -256,21 +253,9 @@ export default function PainelLogistica() {
     });
   }, [solicitacoes, mesRef]);
 
-  // Menor valor positivo pra base da escala logarítmica
-  const minLogY = useMemo(() => {
-    const vals = [];
-    for (const d of dadosCidadesColuna) {
-      if (d.normal > 0) vals.push(d.normal);
-      if (d.demo > 0) vals.push(d.demo);
-    }
-    if (!vals.length) return 1;
-    const m = Math.min(...vals);
-    return m > 0 ? m : 1;
-  }, [dadosCidadesColuna]);
-
   return (
     <div className="p-6 md:p-8 space-y-8">
-      {/* Banner principal do painel + Forms */}
+      {/* Banner principal */}
       <Card className="border-none shadow-lg overflow-hidden">
         <CardContent className="p-0">
           <div
@@ -280,7 +265,6 @@ export default function PainelLogistica() {
                 "linear-gradient(90deg, #165A2A 0%, #FDBA74 40%, #FDE68A 75%, #F9FAFB 100%)",
             }}
           >
-            {/* Lado esquerdo: logo + título oficial */}
             <div className="flex items-center gap-3">
               <div className="w-14 h-14 rounded-2xl overflow-hidden border-2 border-white shadow-md bg-white">
                 <img
@@ -299,7 +283,6 @@ export default function PainelLogistica() {
               </div>
             </div>
 
-            {/* Lado direito: botões dos Forms */}
             <div className="flex flex-col gap-2 w-full md:w-80 justify-start md:items-end">
               <a
                 href={FORM_FRETE_MAQUINA}
@@ -358,7 +341,6 @@ export default function PainelLogistica() {
 
       {/* Listas por status */}
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* RECEBIDO */}
         <Card className="border-none shadow-lg">
           <CardHeader>
             <CardTitle className="text-sm font-semibold text-gray-700">
@@ -380,7 +362,6 @@ export default function PainelLogistica() {
           </CardContent>
         </Card>
 
-        {/* PROGRAMADO */}
         <Card className="border-none shadow-lg">
           <CardHeader>
             <CardTitle className="text-sm font-semibold text-blue-700">
@@ -402,7 +383,6 @@ export default function PainelLogistica() {
           </CardContent>
         </Card>
 
-        {/* EM ROTA */}
         <Card className="border-none shadow-lg">
           <CardHeader>
             <CardTitle className="text-sm font-semibold text-amber-700">
@@ -425,7 +405,7 @@ export default function PainelLogistica() {
         </Card>
       </div>
 
-      {/* Gráfico mensal: Custos Regulares vs Demonstrações (Concluídos) */}
+      {/* Gráfico mensal */}
       <Card className="border-none shadow-lg">
         <CardHeader className="flex items-center justify-between gap-4">
           <div>
@@ -447,24 +427,28 @@ export default function PainelLogistica() {
           </div>
         </CardHeader>
 
-        <CardContent>
+        {/* Fundo branco liso no conteúdo do gráfico */}
+        <CardContent className="bg-white">
           <ResponsiveContainer width="100%" height={380}>
             <BarChart
               data={dadosCidadesColuna}
               margin={{ top: 80, right: 24, left: 0, bottom: 34 }}
               barCategoryGap="25%"
             >
-              <CartesianGrid strokeDasharray="3 3" stroke={GRID_LIGHT} />
-              <XAxis dataKey="cidade" angle={-15} textAnchor="end" height={50} />
-              <YAxis
-                scale="log"
-                domain={[minLogY, "auto"]}
-                allowDataOverflow
-                tickFormatter={(v) =>
-                  `R$ ${Number(v).toLocaleString("pt-BR")}`
-                }
-                tick={{ fontSize: 10 }}
+              {/* Eixo X só com labels, sem linha / tique */}
+              <XAxis
+                dataKey="cidade"
+                angle={-15}
+                textAnchor="end"
+                height={50}
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 11, fill: "#4B5563" }}
               />
+
+              {/* Eixo Y escondido (sem números, sem linha) */}
+              <YAxis hide />
+
               <Tooltip
                 formatter={(value, name) => {
                   if (name === "Total")
@@ -488,7 +472,7 @@ export default function PainelLogistica() {
                 labelFormatter={(label) => `Cidade: ${label}`}
               />
 
-              {/* Normal (bloco verde grande) */}
+              {/* Normal (bloco verde) */}
               <Bar
                 dataKey="normal"
                 name="Normal"
@@ -526,7 +510,7 @@ export default function PainelLogistica() {
                 />
               </Bar>
 
-              {/* Layer invisível só para labels de Qtd e Total */}
+              {/* Layer invisível só para Qtd e Total */}
               <Bar dataKey="zero" stackId="v" fill="transparent">
                 <LabelList dataKey="qtd" content={<QtdBadge />} />
                 <LabelList dataKey="total" content={<TotalLabel />} />
