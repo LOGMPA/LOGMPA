@@ -244,7 +244,7 @@ export default function Calendario() {
             {format(sabado, "dd/MM", { locale: ptBR })}
           </CardTitle>
           <p className="text-sm text-gray-700">
-            Status: RECEBIDO (CINZA), PROGRAMADO (AZUL), EM ROTA (AMARELO)
+            Programação conforme FORMS.
           </p>
         </CardHeader>
         <CardContent className="p-6">
@@ -352,7 +352,7 @@ export default function Calendario() {
               locale: ptBR,
             })}
           </CardTitle>
-          <p className="text-sm text-gray-600">Status: CONCLUÍDO (VERDE)</p>
+          <p className="text-sm text-gray-600">Somente o que já está com Status: CONCLUÍDO</p>
         </CardHeader>
         <CardContent className="p-6">
           <div className="grid grid-cols-7 gap-2">
