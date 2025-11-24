@@ -1,4 +1,4 @@
-// src/layouts/Layout.jsx (ou onde estiver esse arquivo)
+// src/layouts/Layout.jsx
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
