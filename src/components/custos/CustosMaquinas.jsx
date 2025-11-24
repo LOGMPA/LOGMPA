@@ -18,7 +18,7 @@ import { loadCustosMaquinas } from "@/services/custosExcelService";
 const VERDE_ESCURO = "#2A5E20";
 const VERDE_MEDIO = "#387C2B";
 const AMARELO = "#FCDC01";
-const AMARELO_LEGENDA = "#E0B800"; // um tiquinho mais escuro
+const AMARELO_LEGENDA = "#E0B800";
 
 const PIE_COLORS = [
   "#FFC800",
@@ -95,7 +95,6 @@ export default function CustosMaquinas({ mes = null }) {
     grafico05Munck = [],
   } = data || {};
 
-  // --------- PREPARAÇÃO DOS DADOS ---------
   const dadosGrafico01 = useMemo(
     () =>
       filterEmptyRows(grafico01MetaVsReal, ["meta", "mediaAtual"]).map(
@@ -201,7 +200,7 @@ export default function CustosMaquinas({ mes = null }) {
     );
   }
 
-  // ========= LABELS CUSTOM PRO "CUSTO POR TIPO" =========
+  // LABELS – CUSTO POR TIPO
   const ProprioStackLabel = (props) => {
     const { x, y, width, height, index, value } = props;
     const item = dadosGrafico02[index];
@@ -284,14 +283,12 @@ export default function CustosMaquinas({ mes = null }) {
     );
   };
 
-  // QTD FRETE CENTRALIZADO NO TOPO DA COLUNA
   const QtdFreteTopLabel = (props) => {
-    const { x, y, width, value } = props;
-    if (!value && value !== 0) return null;
-    const cx = x + (width || 0) / 2;
+    const { x, y, value } = props;
+    if (value === null || value === undefined) return null;
     return (
       <text
-        x={cx}
+        x={x}
         y={y - 6}
         textAnchor="middle"
         fontSize={11}
@@ -303,7 +300,6 @@ export default function CustosMaquinas({ mes = null }) {
     );
   };
 
-  // ===================== RENDER =====================
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       {/* GRÁFICO 1 - META VS REAL */}
@@ -516,7 +512,6 @@ export default function CustosMaquinas({ mes = null }) {
                   },
                 ]}
               />
-              {/* Próprio */}
               <Bar
                 dataKey="proprioNum"
                 name="Próprio"
@@ -527,7 +522,6 @@ export default function CustosMaquinas({ mes = null }) {
               >
                 <LabelList content={ProprioStackLabel} />
               </Bar>
-              {/* Terceiro */}
               <Bar
                 dataKey="terceiroNum"
                 name="Terceiro"
@@ -539,7 +533,6 @@ export default function CustosMaquinas({ mes = null }) {
               >
                 <LabelList content={TerceiroStackLabel} />
               </Bar>
-              {/* Qtd Frete – topo centralizado */}
               <Bar
                 dataKey="qtdFreteNum"
                 name="Qtd Frete"
@@ -569,8 +562,8 @@ export default function CustosMaquinas({ mes = null }) {
             <BarChart
               data={dadosGrafico03}
               layout="vertical"
-              barCategoryGap={12}
-              margin={{ left: 130, right: 40, top: 20, bottom: 20 }}
+              barCategoryGap={10}
+              margin={{ left: 130, right: 40, top: 10, bottom: 10 }}
             >
               <XAxis type="number" hide domain={[0, 100]} />
               <YAxis
@@ -605,28 +598,60 @@ export default function CustosMaquinas({ mes = null }) {
                   content={({ x, y, width, height, index }) => {
                     const item = dadosGrafico03[index];
                     if (!item || !item.valorReal) return null;
+
                     const percent = item.valorNum.toFixed(0);
+                    const label = `${formatCurrency(
+                      item.valorReal
+                    )} (${percent}%)`;
+
+                    const charW = 6;
+                    const paddingX = 8;
+                    const boxH = 18;
+                    const boxW = label.length * charW + paddingX * 2;
+
+                    const centerY = y + height / 2;
+                    let boxX;
+                    let textX;
+
+                    if (width >= boxW + 10) {
+                      boxX = x + width / 2 - boxW / 2;
+                      textX = x + width / 2;
+                    } else {
+                      boxX = x + width + 6;
+                      textX = boxX + boxW / 2;
+                    }
+
+                    const boxY = centerY - boxH / 2;
+
                     return (
-                      <text
-                        x={x + width / 2}
-                        y={y + height / 2}
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                        style={{
-                          fontSize: 10,
-                          fontWeight: 700,
-                          fill: "#FFFFFF",
-                        }}
-                      >
-                        {formatCurrency(item.valorReal)} ({percent}%)
-                      </text>
+                      <g>
+                        <rect
+                          x={boxX}
+                          y={boxY}
+                          width={boxW}
+                          height={boxH}
+                          rx={4}
+                          ry={4}
+                          fill={VERDE_MEDIO}
+                        />
+                        <text
+                          x={textX}
+                          y={centerY + 4}
+                          textAnchor="middle"
+                          fontSize={10}
+                          fontWeight={700}
+                          fill="#FFFFFF"
+                        >
+                          {label}
+                        </text>
+                      </g>
                     );
                   }}
                 />
                 <LabelList
                   dataKey="kmNum"
                   position="right"
-                  offset={8}
+                  offset={10}
                   formatter={(v) => `${toNumber(v)} km`}
                   style={{
                     fontSize: 10,
@@ -640,7 +665,7 @@ export default function CustosMaquinas({ mes = null }) {
         </CardContent>
       </Card>
 
-      {/* GRÁFICO 4 - MUNCK (pizza) */}
+      {/* GRÁFICO 4 - MUNCK */}
       <Card className="shadow-sm lg:col-span-1">
         <CardHeader>
           <CardTitle
