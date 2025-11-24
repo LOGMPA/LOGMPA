@@ -1,3 +1,4 @@
+// src/layouts/Layout.jsx (ou onde estiver esse arquivo)
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
@@ -8,7 +9,9 @@ import {
   Presentation,
   Tractor,
   Wallet,
+  Menu,
 } from "lucide-react";
+
 import {
   Sidebar,
   SidebarContent,
@@ -20,8 +23,9 @@ import {
   SidebarMenuItem,
   SidebarHeader,
   SidebarProvider,
-  SidebarTrigger,
 } from "../components/ui/sidebar";
+
+import { Sheet, SheetContent, SheetTrigger } from "../components/ui/sheet";
 
 const navigationItems = [
   { title: "Painel Logística 2026", to: "/painel", icon: LayoutDashboard },
@@ -35,10 +39,39 @@ const navigationItems = [
 export default function Layout({ children }) {
   const location = useLocation();
 
+  const renderNavList = (extraClass = "") => (
+    <nav className={`flex flex-col gap-1 ${extraClass}`}>
+      {navigationItems.map((item) => {
+        const active = location.pathname.startsWith(item.to);
+
+        return (
+          <Link
+            key={item.title}
+            to={item.to}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm mb-1 transition-colors
+              ${
+                active
+                  ? "bg-[#367C2B] text-white font-semibold"
+                  : "text-gray-700 hover:bg-gray-100"
+              }`}
+          >
+            <item.icon
+              className={`w-4 h-4 ${
+                active ? "text-white" : "text-gray-500"
+              }`}
+            />
+            <span>{item.title}</span>
+          </Link>
+        );
+      })}
+    </nav>
+  );
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-[#FAFAF9]">
-        <Sidebar className="border-r border-gray-200">
+        {/* SIDEBAR DESKTOP */}
+        <Sidebar className="border-r border-gray-200 hidden md:flex">
           <SidebarHeader className="border-b border-gray-200 p-4">
             <div className="flex items-center gap-3">
               <div
@@ -93,15 +126,53 @@ export default function Layout({ children }) {
           </SidebarContent>
         </Sidebar>
 
+        {/* CONTEÚDO */}
         <main className="flex-1 flex flex-col">
-          <header className="bg-white border-b border-gray-200 px-6 py-4 md:hidden sticky top-0 z-10">
-            <div className="flex items-center gap-4">
-              <SidebarTrigger className="hover:bg-gray-100 p-2 rounded-lg transition-colors" />
+          {/* HEADER MOBILE COM HAMBÚRGUER QUE FUNCIONA */}
+          <header className="bg-white border-b border-gray-200 px-4 py-3 md:hidden sticky top-0 z-20">
+            <div className="flex items-center gap-3">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <button
+                    type="button"
+                    className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white p-2 shadow-sm active:scale-95"
+                    aria-label="Abrir menu"
+                  >
+                    <Menu className="w-5 h-5 text-gray-800" />
+                  </button>
+                </SheetTrigger>
+                <SheetContent side="left" className="p-4 w-64">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div
+                      className="w-9 h-9 rounded-xl flex items-center justify-center shadow-md"
+                      style={{ backgroundColor: "#275317" }}
+                    >
+                      <Tractor className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="font-bold text-gray-900 text-base">
+                        Logística
+                      </h2>
+                      <p className="text-[11px] text-gray-500">
+                        Sistema 2026
+                      </p>
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                    Navegação
+                  </p>
+
+                  {renderNavList()}
+                </SheetContent>
+              </Sheet>
+
               <h1 className="text-lg font-semibold text-gray-900">
                 Logística 2026
               </h1>
             </div>
           </header>
+
           <div className="flex-1 overflow-auto">{children}</div>
         </main>
       </div>
