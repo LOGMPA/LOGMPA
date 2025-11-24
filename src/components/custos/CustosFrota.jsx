@@ -6,7 +6,6 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   LabelList,
   PieChart,
@@ -18,7 +17,6 @@ import { loadCustosFrota } from "@/services/custosExcelService";
 const VERDE = "#007233";
 const VERDE_CLARO = "#76B947";
 const AMARELO = "#FFC800";
-
 const PIE_COLORS = [VERDE_CLARO, AMARELO];
 
 const formatCurrency = (value) => {
@@ -31,14 +29,14 @@ const formatCurrency = (value) => {
   })}`;
 };
 
-export default function CustosFrota() {
+export default function CustosFrota({ mes = null }) {
   const [data, setData] = useState(null);
   const [status, setStatus] = useState("loading");
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const res = await loadCustosFrota();
+        const res = await loadCustosFrota(mes);
         setData(res);
         setStatus("ok");
       } catch (err) {
@@ -47,7 +45,7 @@ export default function CustosFrota() {
       }
     }
     fetchData();
-  }, []);
+  }, [mes]);
 
   if (status === "loading") {
     return (
@@ -72,20 +70,27 @@ export default function CustosFrota() {
     graficoValorKm = [],
   } = data;
 
-  // Normaliza o aproveitamento para 0–100
-  const aproveitamentoData = grafico12Aproveitamento.map((item) => {
-    let p = Number(item.aproveitamento) || 0;
-    if (p > 1) {
-      // provavelmente 59, 41, etc
-      return { ...item, percent: p };
-    }
-    // 0.59 -> 59%
-    return { ...item, percent: p * 100 };
-  });
+  // aproveitamento em % para DAF e VW
+  const aproveitamentoData = [
+    {
+      frota: "DAF",
+      percent:
+        grafico12Aproveitamento[0]?.aproveitamento > 1
+          ? grafico12Aproveitamento[0]?.aproveitamento
+          : (grafico12Aproveitamento[0]?.aproveitamento || 0) * 100,
+    },
+    {
+      frota: "VW",
+      percent:
+        grafico12Aproveitamento[1]?.aproveitamento > 1
+          ? grafico12Aproveitamento[1]?.aproveitamento
+          : (grafico12Aproveitamento[1]?.aproveitamento || 0) * 100,
+    },
+  ];
 
   return (
-    <div className="grid gap-4 lg:grid-cols-3">
-      {/* 1º – APROVEITAMENTO (PIZZA) */}
+    <div className="grid gap-4 lg:grid-cols-2">
+      {/* APROVEITAMENTO DIÁRIO - PIZZA */}
       <Card className="shadow-sm lg:col-span-1">
         <CardHeader>
           <CardTitle className="text-base font-semibold uppercase text-center">
@@ -123,8 +128,8 @@ export default function CustosFrota() {
         </CardContent>
       </Card>
 
-      {/* 2º – VALOR APROXIMADO DE CUSTOS COM TRANSPORTE VS KM RODADO */}
-      <Card className="shadow-sm lg:col-span-2">
+      {/* VALOR APROXIMADO DE CUSTOS VS KM RODADO */}
+      <Card className="shadow-sm lg:col-span-1">
         <CardHeader>
           <CardTitle className="text-base font-semibold uppercase">
             VALOR APROXIMADO DE CUSTOS COM TRANSPORTE VS KM RODADO
@@ -137,36 +142,38 @@ export default function CustosFrota() {
               layout="vertical"
               margin={{ left: 140, right: 40, top: 10, bottom: 10 }}
             >
-              <XAxis
-                type="number"
-                tickLine={false}
-                axisLine={false}
-                tick={{ fontSize: 12 }}
-              />
+              <XAxis type="number" hide />
               <YAxis
                 dataKey="frota"
                 type="category"
                 tickLine={false}
                 axisLine={false}
-                tick={{ fontSize: 12 }}
+                tick={{
+                  fontSize: 12,
+                  fontWeight: 600,
+                  fill: "#000",
+                }}
               />
               <Tooltip
                 formatter={(value) => formatCurrency(value)}
                 cursor={{ fill: "rgba(0,0,0,0.03)" }}
               />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar
                 dataKey="valor"
                 name="Valor (R$)"
                 fill={VERDE_CLARO}
-                barSize={26}
+                barSize={50}
                 radius={[0, 4, 4, 0]}
               >
                 <LabelList
                   dataKey="valor"
                   position="insideRight"
                   formatter={formatCurrency}
-                  style={{ fontSize: 11, fontWeight: 600, fill: "#000" }}
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    fill: "#000",
+                  }}
                 />
               </Bar>
             </BarChart>
@@ -174,7 +181,7 @@ export default function CustosFrota() {
         </CardContent>
       </Card>
 
-      {/* 3º – CUSTOS DAF 2026 */}
+      {/* CUSTOS DAF 2026 */}
       <Card className="shadow-sm lg:col-span-1">
         <CardHeader>
           <CardTitle className="text-base font-semibold uppercase text-center">
@@ -183,35 +190,46 @@ export default function CustosFrota() {
         </CardHeader>
         <CardContent className="h-64">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={grafico11GastosDAF} barCategoryGap={40}>
+            <BarChart
+              data={grafico11GastosDAF}
+              barCategoryGap={30}
+              margin={{ bottom: 40 }}
+            >
               <XAxis
                 dataKey="item"
                 tickLine={false}
                 axisLine={false}
-                tick={{ fontSize: 11 }}
+                interval={0}
+                angle={-15}
+                textAnchor="end"
+                tick={{
+                  fontSize: 10,
+                  fontWeight: 600,
+                  fill: "#000",
+                }}
+                height={40}
               />
-              <YAxis
-                tickLine={false}
-                axisLine={false}
-                tick={{ fontSize: 11 }}
-              />
+              <YAxis hide />
               <Tooltip
                 formatter={(value) => formatCurrency(value)}
                 cursor={{ fill: "rgba(0,0,0,0.03)" }}
               />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar
                 dataKey="valor"
                 name="Valor (R$)"
                 fill={VERDE}
-                barSize={30}
+                barSize={40}
                 radius={[4, 4, 0, 0]}
               >
                 <LabelList
                   dataKey="valor"
                   position="top"
                   formatter={formatCurrency}
-                  style={{ fontSize: 11, fontWeight: 600, fill: "#000" }}
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    fill: "#000",
+                  }}
                 />
               </Bar>
             </BarChart>
@@ -219,7 +237,7 @@ export default function CustosFrota() {
         </CardContent>
       </Card>
 
-      {/* 4º – CUSTOS VW 2026 */}
+      {/* CUSTOS VW 2026 */}
       <Card className="shadow-sm lg:col-span-1">
         <CardHeader>
           <CardTitle className="text-base font-semibold uppercase text-center">
@@ -228,35 +246,46 @@ export default function CustosFrota() {
         </CardHeader>
         <CardContent className="h-64">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={grafico10GastosVW} barCategoryGap={40}>
+            <BarChart
+              data={grafico10GastosVW}
+              barCategoryGap={30}
+              margin={{ bottom: 40 }}
+            >
               <XAxis
                 dataKey="item"
                 tickLine={false}
                 axisLine={false}
-                tick={{ fontSize: 11 }}
+                interval={0}
+                angle={-15}
+                textAnchor="end"
+                tick={{
+                  fontSize: 10,
+                  fontWeight: 600,
+                  fill: "#000",
+                }}
+                height={40}
               />
-              <YAxis
-                tickLine={false}
-                axisLine={false}
-                tick={{ fontSize: 11 }}
-              />
+              <YAxis hide />
               <Tooltip
                 formatter={(value) => formatCurrency(value)}
                 cursor={{ fill: "rgba(0,0,0,0.03)" }}
               />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar
                 dataKey="valor"
                 name="Valor (R$)"
                 fill={VERDE_CLARO}
-                barSize={30}
+                barSize={40}
                 radius={[4, 4, 0, 0]}
               >
                 <LabelList
                   dataKey="valor"
                   position="top"
                   formatter={formatCurrency}
-                  style={{ fontSize: 11, fontWeight: 600, fill: "#000" }}
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    fill: "#000",
+                  }}
                 />
               </Bar>
             </BarChart>
