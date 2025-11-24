@@ -35,6 +35,36 @@ const isTransferMPA = (sol) => {
   return esta.includes("MPA") && vai.includes("MPA");
 };
 
+/** Normaliza status: remove (D), sobe pra maiúsculo */
+const normalizeStatus = (statusRaw) => {
+  return String(statusRaw || "")
+    .toUpperCase()
+    .replace(/\s*\(D\)\s*$/, "")
+    .trim();
+};
+
+/** Cores de referência pro badge de status */
+const getStatusClasses = (statusRaw) => {
+  const base = normalizeStatus(statusRaw);
+
+  switch (base) {
+    case "RECEBIDO":
+      // CINZA
+      return "bg-gray-100 text-gray-800 border-gray-300";
+    case "PROGRAMADO":
+      // AZUL
+      return "bg-blue-100 text-blue-800 border-blue-300";
+    case "EM ROTA":
+      // AMARELO
+      return "bg-amber-100 text-amber-800 border-amber-300";
+    case "SUSPENSO":
+      // VERMELHO
+      return "bg-red-100 text-red-800 border-red-300";
+    default:
+      return "bg-slate-100 text-slate-800 border-slate-300";
+  }
+};
+
 export default function SolicitacoesTransporte() {
   const [filtros, setFiltros] = useState({
     chassi: "",
@@ -52,7 +82,10 @@ export default function SolicitacoesTransporte() {
   const solicitacoesFiltradas = useMemo(() => {
     const out = solicitacoes.filter((s) => {
       if (s._status_base === "CONCLUIDO") return false;
-      if (!allowed.has(s._status_base)) return false;
+
+      // garante que RECEBIDO (D), PROGRAMADO (D) etc entram
+      const baseNorm = normalizeStatus(s._status_base);
+      if (!allowed.has(baseNorm)) return false;
 
       if (
         filtros.chassi &&
@@ -99,8 +132,8 @@ export default function SolicitacoesTransporte() {
 
     // ordena: mais antigo -> mais novo, SUSPENSO por último
     out.sort((a, b) => {
-      const aSusp = a._status_base === "SUSPENSO" ? 1 : 0;
-      const bSusp = b._status_base === "SUSPENSO" ? 1 : 0;
+      const aSusp = normalizeStatus(a._status_base) === "SUSPENSO" ? 1 : 0;
+      const bSusp = normalizeStatus(b._status_base) === "SUSPENSO" ? 1 : 0;
       if (aSusp !== bSusp) return aSusp - bSusp;
       const ta = a._previsao_date?.getTime() || 0;
       const tb = b._previsao_date?.getTime() || 0;
@@ -109,15 +142,6 @@ export default function SolicitacoesTransporte() {
 
     return out;
   }, [solicitacoes, filtros]);
-
-  const statusColors = {
-    RECEBIDO: "bg-gray-100 text-gray-800",
-    "RECEBIDO (D)": "bg-gray-100 text-gray-800",
-    PROGRAMADO: "bg-blue-100 text-blue-800",
-    "PROGRAMADO (D)": "bg-blue-100 text-blue-800",
-    "EM ROTA": "bg-amber-100 text-amber-800",
-    SUSPENSO: "bg-red-100 text-red-800",
-  };
 
   return (
     <div className="p-6 md:p-8 space-y-4">
@@ -128,7 +152,6 @@ export default function SolicitacoesTransporte() {
             className="px-4 py-2"
             style={{
               background:
-                // azul profundo → azul claro → laranja pôr do sol → amarelo bem suave
                 "linear-gradient(90deg, #0F172A 0%, #1D4ED8 25%, #38BDF8 55%, #FDBA74 80%, #FEF9C3 100%)",
             }}
           >
@@ -149,14 +172,13 @@ export default function SolicitacoesTransporte() {
         </CardContent>
       </Card>
 
-      {/* Filtros - azul clarinho com toque de pôr do sol bem de leve */}
+      {/* Filtros */}
       <Card className="border-none shadow-md overflow-hidden">
         <CardContent className="p-0">
           <div
             className="px-3 py-1.5"
             style={{
               background:
-                // azul bem claro → quase branco → bege/creme suave
                 "linear-gradient(90deg, #E0F2FE 0%, #EFF6FF 45%, #FFF7ED 100%)",
             }}
           >
@@ -228,6 +250,7 @@ export default function SolicitacoesTransporte() {
                 solicitacoesFiltradas.map((sol) => {
                   const linkUrl = getLinkUrl(sol);
                   const isTransfer = !linkUrl && isTransferMPA(sol);
+                  const statusClasses = getStatusClasses(sol.status);
 
                   return (
                     <TableRow key={sol.id} className="hover:bg-gray-50">
@@ -264,10 +287,7 @@ export default function SolicitacoesTransporte() {
                       </TableCell>
                       <TableCell>
                         <span
-                          className={`${
-                            statusColors[sol.status] ||
-                            "bg-gray-100 text-gray-800"
-                          } text-[10px] rounded px-1 py-0.5 border`}
+                          className={`${statusClasses} text-[10px] rounded px-1 py-0.5 border`}
                         >
                           {sol.status}
                         </span>
