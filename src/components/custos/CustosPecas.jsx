@@ -6,7 +6,6 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   LabelList,
 } from "recharts";
@@ -25,14 +24,14 @@ const formatCurrency = (value) => {
   })}`;
 };
 
-export default function CustosPecas() {
+export default function CustosPecas({ mes = null }) {
   const [data, setData] = useState(null);
   const [status, setStatus] = useState("loading");
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const res = await loadCustosPecas();
+        const res = await loadCustosPecas(mes);
         setData(res);
         setStatus("ok");
       } catch (err) {
@@ -41,7 +40,7 @@ export default function CustosPecas() {
       }
     }
     fetchData();
-  }, []);
+  }, [mes]);
 
   if (status === "loading") {
     return (
@@ -66,9 +65,26 @@ export default function CustosPecas() {
     grafico09PorTransportadora = [],
   } = data;
 
+  // Quebra o nome da empresa em 2 linhas pra não ficar uma bíblia embaixo da barra
+  const grafico08Formatado = grafico08PorMotoBoy.map((item) => ({
+    ...item,
+    empresaFormatada: item.empresa.replace(
+      /\s(COURIER|TR PEÇA)$/i,
+      "\n$1"
+    ),
+  }));
+
+  const grafico09Formatado = grafico09PorTransportadora.map((item) => ({
+    ...item,
+    empresaFormatada: item.empresa.replace(
+      /\s(-TR PEÇA)$/i,
+      "\n$1"
+    ),
+  }));
+
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      {/* GRAFICO 06 – CUSTO COURIER POR LOJA */}
+      {/* GRÁFICO 06 – CUSTO COURIER POR LOJA */}
       <Card className="shadow-sm">
         <CardHeader>
           <CardTitle className="text-base font-semibold uppercase">
@@ -77,23 +93,28 @@ export default function CustosPecas() {
         </CardHeader>
         <CardContent className="h-72">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={grafico06MotoBoyPC} barCategoryGap={30}>
+            <BarChart
+              data={grafico06MotoBoyPC}
+              barCategoryGap={30}
+              margin={{ bottom: 20 }}
+            >
               <XAxis
                 dataKey="cidade"
                 tickLine={false}
                 axisLine={false}
-                tick={{ fontSize: 12 }}
+                interval={0}
+                angle={0}
+                tick={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  fill: "#000",
+                }}
               />
-              <YAxis
-                tickLine={false}
-                axisLine={false}
-                tick={{ fontSize: 12 }}
-              />
+              <YAxis hide />
               <Tooltip
                 formatter={(value) => formatCurrency(value)}
                 cursor={{ fill: "rgba(0,0,0,0.03)" }}
               />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar
                 dataKey="valor"
                 name="Valor (R$)"
@@ -105,7 +126,11 @@ export default function CustosPecas() {
                   dataKey="valor"
                   position="top"
                   formatter={formatCurrency}
-                  style={{ fontSize: 11, fontWeight: 600, fill: "#000" }}
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    fill: "#000",
+                  }}
                 />
               </Bar>
             </BarChart>
@@ -113,7 +138,7 @@ export default function CustosPecas() {
         </CardContent>
       </Card>
 
-      {/* GRAFICO 07 – CUSTO TRANSPORTADORA POR LOJA */}
+      {/* GRÁFICO 07 – CUSTO TRANSPORTADORA POR LOJA */}
       <Card className="shadow-sm">
         <CardHeader>
           <CardTitle className="text-base font-semibold uppercase">
@@ -122,23 +147,28 @@ export default function CustosPecas() {
         </CardHeader>
         <CardContent className="h-72">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={grafico07TranspPC} barCategoryGap={30}>
+            <BarChart
+              data={grafico07TranspPC}
+              barCategoryGap={30}
+              margin={{ bottom: 20 }}
+            >
               <XAxis
                 dataKey="cidade"
                 tickLine={false}
                 axisLine={false}
-                tick={{ fontSize: 12 }}
+                interval={0}
+                angle={0}
+                tick={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  fill: "#000",
+                }}
               />
-              <YAxis
-                tickLine={false}
-                axisLine={false}
-                tick={{ fontSize: 12 }}
-              />
+              <YAxis hide />
               <Tooltip
                 formatter={(value) => formatCurrency(value)}
                 cursor={{ fill: "rgba(0,0,0,0.03)" }}
               />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar
                 dataKey="valor"
                 name="Valor (R$)"
@@ -150,7 +180,11 @@ export default function CustosPecas() {
                   dataKey="valor"
                   position="top"
                   formatter={formatCurrency}
-                  style={{ fontSize: 11, fontWeight: 600, fill: "#000" }}
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    fill: "#000",
+                  }}
                 />
               </Bar>
             </BarChart>
@@ -158,7 +192,7 @@ export default function CustosPecas() {
         </CardContent>
       </Card>
 
-      {/* GRAFICO 08 – CUSTO COURIER (POR EMPRESA) */}
+      {/* GRÁFICO 08 – CUSTO COURIER (POR EMPRESA) */}
       <Card className="shadow-sm">
         <CardHeader>
           <CardTitle className="text-base font-semibold uppercase">
@@ -167,23 +201,45 @@ export default function CustosPecas() {
         </CardHeader>
         <CardContent className="h-72">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={grafico08PorMotoBoy} barCategoryGap={40}>
+            <BarChart
+              data={grafico08Formatado}
+              barCategoryGap={40}
+              margin={{ bottom: 70 }}
+            >
               <XAxis
-                dataKey="empresa"
+                dataKey="empresaFormatada"
                 tickLine={false}
                 axisLine={false}
-                tick={{ fontSize: 11 }}
+                interval={0}
+                height={70}
+                tick={(props) => {
+                  const { x, y, payload } = props;
+                  const lines = String(payload.value || "").split("\n");
+                  return (
+                    <g transform={`translate(${x},${y})`}>
+                      {lines.map((line, index) => (
+                        <text
+                          key={index}
+                          x={0}
+                          y={0}
+                          dy={index * 12 + 8}
+                          textAnchor="middle"
+                          fontSize={9}
+                          fontWeight={600}
+                          fill="#000"
+                        >
+                          {line}
+                        </text>
+                      ))}
+                    </g>
+                  );
+                }}
               />
-              <YAxis
-                tickLine={false}
-                axisLine={false}
-                tick={{ fontSize: 12 }}
-              />
+              <YAxis hide />
               <Tooltip
                 formatter={(value) => formatCurrency(value)}
                 cursor={{ fill: "rgba(0,0,0,0.03)" }}
               />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar
                 dataKey="valor"
                 name="Valor (R$)"
@@ -195,7 +251,11 @@ export default function CustosPecas() {
                   dataKey="valor"
                   position="top"
                   formatter={formatCurrency}
-                  style={{ fontSize: 11, fontWeight: 600, fill: "#000" }}
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    fill: "#000",
+                  }}
                 />
               </Bar>
             </BarChart>
@@ -203,7 +263,7 @@ export default function CustosPecas() {
         </CardContent>
       </Card>
 
-      {/* GRAFICO 09 – CUSTO TRANSPORTADORA (POR EMPRESA) */}
+      {/* GRÁFICO 09 – CUSTO TRANSPORTADORA (POR EMPRESA) */}
       <Card className="shadow-sm">
         <CardHeader>
           <CardTitle className="text-base font-semibold uppercase">
@@ -212,23 +272,45 @@ export default function CustosPecas() {
         </CardHeader>
         <CardContent className="h-72">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={grafico09PorTransportadora} barCategoryGap={40}>
+            <BarChart
+              data={grafico09Formatado}
+              barCategoryGap={40}
+              margin={{ bottom: 70 }}
+            >
               <XAxis
-                dataKey="empresa"
+                dataKey="empresaFormatada"
                 tickLine={false}
                 axisLine={false}
-                tick={{ fontSize: 11 }}
+                interval={0}
+                height={70}
+                tick={(props) => {
+                  const { x, y, payload } = props;
+                  const lines = String(payload.value || "").split("\n");
+                  return (
+                    <g transform={`translate(${x},${y})`}>
+                      {lines.map((line, index) => (
+                        <text
+                          key={index}
+                          x={0}
+                          y={0}
+                          dy={index * 12 + 8}
+                          textAnchor="middle"
+                          fontSize={9}
+                          fontWeight={600}
+                          fill="#000"
+                        >
+                          {line}
+                        </text>
+                      ))}
+                    </g>
+                  );
+                }}
               />
-              <YAxis
-                tickLine={false}
-                axisLine={false}
-                tick={{ fontSize: 12 }}
-              />
+              <YAxis hide />
               <Tooltip
                 formatter={(value) => formatCurrency(value)}
                 cursor={{ fill: "rgba(0,0,0,0.03)" }}
               />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar
                 dataKey="valor"
                 name="Valor (R$)"
@@ -240,7 +322,11 @@ export default function CustosPecas() {
                   dataKey="valor"
                   position="top"
                   formatter={formatCurrency}
-                  style={{ fontSize: 11, fontWeight: 600, fill: "#000" }}
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    fill: "#000",
+                  }}
                 />
               </Bar>
             </BarChart>
