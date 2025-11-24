@@ -33,6 +33,68 @@ const localKey = (dLike) => {
   return `${y}-${m}-${day}`;
 };
 
+// Normaliza status, removendo (D) e subindo pra maiúsculo
+const normalizeStatus = (s) => {
+  const raw =
+    (s?._status_up ||
+      s?._status_base ||
+      s?.status ||
+      "").toString().toUpperCase();
+  return raw.replace(/\s*\(D\)\s*$/, "").trim();
+};
+
+// Cores de referência por status:
+// RECEBIDO  -> cinza
+// PROGRAMADO -> azul
+// EM ROTA   -> amarelo
+// CONCLUÍDO -> verde (pra mês)
+const getStatusStyle = (s) => {
+  const base = normalizeStatus(s);
+
+  switch (base) {
+    case "RECEBIDO":
+      return {
+        cardBg: "bg-gray-50",
+        border: "border-gray-300",
+        tagBg: "bg-gray-500",
+        tagText: "text-white",
+        label: "Recebido",
+      };
+    case "PROGRAMADO":
+      return {
+        cardBg: "bg-blue-50",
+        border: "border-blue-300",
+        tagBg: "bg-blue-600",
+        tagText: "text-white",
+        label: "Programado",
+      };
+    case "EM ROTA":
+      return {
+        cardBg: "bg-amber-50",
+        border: "border-amber-300",
+        tagBg: "bg-amber-400",
+        tagText: "text-amber-900",
+        label: "Em rota",
+      };
+    case "CONCLUÍDO":
+      return {
+        cardBg: "bg-green-50",
+        border: "border-green-300",
+        tagBg: "bg-green-600",
+        tagText: "text-white",
+        label: "Concluído",
+      };
+    default:
+      return {
+        cardBg: "bg-gray-50",
+        border: "border-gray-200",
+        tagBg: "bg-slate-200",
+        tagText: "text-slate-700",
+        label: base || "Sem status",
+      };
+  }
+};
+
 export default function Calendario() {
   const hoje = new Date();
   const segundaFeira = startOfWeek(hoje, { weekStartsOn: 1 }); // seg
@@ -87,11 +149,19 @@ export default function Calendario() {
   const mapaSemana = useMemo(() => {
     const m = new Map();
     for (const s of solicitacoes) {
-      const base = s._status_base;
+      const baseRaw = s._status_base || s._status_up || s.status || "";
+      const base = baseRaw.toString().toUpperCase();
 
       // Só entra no semanal:
       // PROGRAMADO, PROGRAMADO (D) e EM ROTA
-      if (!["PROGRAMADO", "EM ROTA"].includes(base)) continue;
+      if (
+        !(
+          base === "EM ROTA" ||
+          base.startsWith("PROGRAMADO")
+        )
+      ) {
+        continue;
+      }
 
       // usa PREV como principal; se não tiver, cai para REAL; se ainda não tiver, tenta campos brutos
       const dRef =
@@ -181,7 +251,7 @@ export default function Calendario() {
             {format(sabado, "dd/MM", { locale: ptBR })}
           </CardTitle>
           <p className="text-sm text-gray-700">
-            Status: PROGRAMADO, PROGRAMADO (D), EM ROTA
+            Status: PROGRAMADO (AZUL), EM ROTA (AMARELO)
           </p>
         </CardHeader>
         <CardContent className="p-6">
@@ -208,58 +278,69 @@ export default function Calendario() {
                         Sem transportes
                       </p>
                     ) : (
-                      solsDia.map((sol) => (
-                        <div
-                          key={sol.id}
-                          className="bg-gray-50 rounded-lg p-2 border border-gray-200"
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex flex-wrap gap-1">
-                                {(sol.chassi_lista && sol.chassi_lista.length
-                                  ? sol.chassi_lista
-                                  : ["SEM CHASSI"]
-                                ).map((c, i) => (
-                                  <Badge
-                                    key={i}
-                                    className="text-[10px] px-1.5 py-0 font-mono"
-                                  >
-                                    {c}
-                                  </Badge>
-                                ))}
-                              </div>
-                              <p className="text-[10px] text-gray-600 mt-1 break-words">
-                                {sol.nota}
-                              </p>
-                            </div>
-
-                            <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                              {sol.loc && (
-                                <a
-                                  href={sol.loc}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex-shrink-0"
-                                  title="Abrir no mapa"
-                                >
-                                  <MapPin className="w-3 h-3 text-blue-600" />
-                                </a>
-                              )}
-
-                              {sol.is_demo && (
-                                <div
-                                  className="w-4 h-4 rounded-sm bg-purple-500 flex items-center justify-center"
-                                  title="Demonstração"
-                                >
-                                  <span className="text-[9px] font-bold text-white">
-                                    D
-                                  </span>
+                      solsDia.map((sol) => {
+                        const st = getStatusStyle(sol);
+                        const label = st.label || normalizeStatus(sol);
+                        return (
+                          <div
+                            key={sol.id}
+                            className={`rounded-lg p-2 border ${st.cardBg} ${st.border}`}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex flex-wrap gap-1">
+                                  {(sol.chassi_lista && sol.chassi_lista.length
+                                    ? sol.chassi_lista
+                                    : ["SEM CHASSI"]
+                                  ).map((c, i) => (
+                                    <Badge
+                                      key={i}
+                                      className="text-[10px] px-1.5 py-0 font-mono"
+                                    >
+                                      {c}
+                                    </Badge>
+                                  ))}
                                 </div>
-                              )}
+                                <p className="text-[10px] text-gray-600 mt-1 break-words">
+                                  {sol.nota}
+                                </p>
+                              </div>
+
+                              <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                                {/* Status tag com cor de referência */}
+                                <span
+                                  className={`px-1.5 py-0.5 rounded text-[9px] font-semibold ${st.tagBg} ${st.tagText}`}
+                                >
+                                  {label}
+                                </span>
+
+                                {sol.loc && (
+                                  <a
+                                    href={sol.loc}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex-shrink-0"
+                                    title="Abrir no mapa"
+                                  >
+                                    <MapPin className="w-3 h-3 text-blue-600" />
+                                  </a>
+                                )}
+
+                                {sol.is_demo && (
+                                  <div
+                                    className="w-4 h-4 rounded-sm bg-purple-500 flex items-center justify-center"
+                                    title="Demonstração"
+                                  >
+                                    <span className="text-[9px] font-bold text-white">
+                                      D
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 </div>
@@ -278,7 +359,9 @@ export default function Calendario() {
               locale: ptBR,
             })}
           </CardTitle>
-          <p className="text-sm text-gray-600">Status: CONCLUÍDO</p>
+          <p className="text-sm text-gray-600">
+            Status: CONCLUÍDO (VERDE)
+          </p>
         </CardHeader>
         <CardContent className="p-6">
           <div className="grid grid-cols-7 gap-2">
