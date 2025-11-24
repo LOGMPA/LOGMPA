@@ -144,22 +144,15 @@ export default function Calendario() {
     return cells;
   }, [inicioMes.getTime(), diasMes.length]);
 
-  /* ---------------- MAPA SEMANA (PROGRAMADO / PROGRAMADO (D) / EM ROTA) ---------------- */
+  /* ---------------- MAPA SEMANA (RECEBIDO / PROGRAMADO / EM ROTA) ---------------- */
 
   const mapaSemana = useMemo(() => {
     const m = new Map();
     for (const s of solicitacoes) {
-      const baseRaw = s._status_base || s._status_up || s.status || "";
-      const base = baseRaw.toString().toUpperCase();
+      const baseNorm = normalizeStatus(s);
 
-      // Só entra no semanal:
-      // PROGRAMADO, PROGRAMADO (D) e EM ROTA
-      if (
-        !(
-          base === "EM ROTA" ||
-          base.startsWith("PROGRAMADO")
-        )
-      ) {
+      // agora entra: RECEBIDO, PROGRAMADO, EM ROTA (com e sem D)
+      if (!["RECEBIDO", "PROGRAMADO", "EM ROTA"].includes(baseNorm)) {
         continue;
       }
 
@@ -192,7 +185,7 @@ export default function Calendario() {
   const mapaMes = useMemo(() => {
     const m = new Map();
     for (const s of solicitacoes) {
-      if (!s._status_up?.includes("CONCL")) continue; // só concluído (inclusive (D) se quiser filtrar depois)
+      if (!s._status_up?.includes("CONCL")) continue; // só concluído (inclusive (D))
 
       const k = s._previsao_key || localKey(s.previsao_br || s.previsao);
       if (!k || !setMesKeys.has(k)) continue;
@@ -251,7 +244,7 @@ export default function Calendario() {
             {format(sabado, "dd/MM", { locale: ptBR })}
           </CardTitle>
           <p className="text-sm text-gray-700">
-            Status: PROGRAMADO (AZUL), EM ROTA (AMARELO)
+            Status: RECEBIDO (CINZA), PROGRAMADO (AZUL), EM ROTA (AMARELO)
           </p>
         </CardHeader>
         <CardContent className="p-6">
@@ -359,9 +352,7 @@ export default function Calendario() {
               locale: ptBR,
             })}
           </CardTitle>
-          <p className="text-sm text-gray-600">
-            Status: CONCLUÍDO (VERDE)
-          </p>
+          <p className="text-sm text-gray-600">Status: CONCLUÍDO (VERDE)</p>
         </CardHeader>
         <CardContent className="p-6">
           <div className="grid grid-cols-7 gap-2">
