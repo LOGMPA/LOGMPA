@@ -124,6 +124,8 @@ export default function CustosMaquinas({ mes = null }) {
           proprioValor: proprio,
           terceiroValor: terceiro,
           qtdFreteNum: toNumber(item.qtdFrete),
+          // sempre 100 só pra empurrar o label pro topo do gráfico
+          qtdFreteBar: 100,
         };
       }),
     [grafico02SomaCustos]
@@ -284,7 +286,9 @@ export default function CustosMaquinas({ mes = null }) {
   };
 
   const QtdFreteTopLabel = (props) => {
-    const { x, y, value } = props;
+    const { x, y, index } = props;
+    const item = dadosGrafico02[index];
+    const value = item?.qtdFreteNum;
     if (value === null || value === undefined) return null;
     return (
       <text
@@ -533,8 +537,9 @@ export default function CustosMaquinas({ mes = null }) {
               >
                 <LabelList content={TerceiroStackLabel} />
               </Bar>
+              {/* Bar fantasma só pra posicionar a QTD no topo */}
               <Bar
-                dataKey="qtdFreteNum"
+                dataKey="qtdFreteBar"
                 name="Qtd Frete"
                 fill="transparent"
                 barSize={55}
@@ -603,6 +608,7 @@ export default function CustosMaquinas({ mes = null }) {
                     const label = `${formatCurrency(
                       item.valorReal
                     )} (${percent}%)`;
+                    const kmText = `${item.kmNum} km`;
 
                     const charW = 6;
                     const paddingX = 8;
@@ -612,13 +618,18 @@ export default function CustosMaquinas({ mes = null }) {
                     const centerY = y + height / 2;
                     let boxX;
                     let textX;
+                    let kmX;
 
                     if (width >= boxW + 10) {
+                      // caixa dentro da barra, km depois da barra
                       boxX = x + width / 2 - boxW / 2;
                       textX = x + width / 2;
+                      kmX = x + width + 10;
                     } else {
+                      // caixa fora da barra, km depois da caixa
                       boxX = x + width + 6;
                       textX = boxX + boxW / 2;
+                      kmX = boxX + boxW + 14;
                     }
 
                     const boxY = centerY - boxH / 2;
@@ -644,19 +655,18 @@ export default function CustosMaquinas({ mes = null }) {
                         >
                           {label}
                         </text>
+                        <text
+                          x={kmX}
+                          y={centerY + 4}
+                          textAnchor="start"
+                          fontSize={10}
+                          fontWeight={700}
+                          fill="#000000"
+                        >
+                          {kmText}
+                        </text>
                       </g>
                     );
-                  }}
-                />
-                <LabelList
-                  dataKey="kmNum"
-                  position="right"
-                  offset={10}
-                  formatter={(v) => `${toNumber(v)} km`}
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    fill: "#000",
                   }}
                 />
               </Bar>
