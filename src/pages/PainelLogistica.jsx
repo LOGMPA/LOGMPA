@@ -425,12 +425,12 @@ export default function PainelLogistica() {
         </Card>
       </div>
 
-      {/* Gráfico mensal: Custos Normais vs Demonstrações (Concluídos) */}
+      {/* Gráfico mensal: Custos Regulares vs Demonstrações (Concluídos) */}
       <Card className="border-none shadow-lg">
         <CardHeader className="flex items-center justify-between gap-4">
           <div>
             <CardTitle className="text-xl font-bold text-gray-900">
-              Custos Normais vs Demonstrações (Concluídos)
+              Custos Regulares vs Demonstrações (Concluídos)
             </CardTitle>
             <p className="text-gray-600">
               Usa <b>Custo por Filial</b>. Segmentos: Regular (verde) e Demonstração (amarelo).
