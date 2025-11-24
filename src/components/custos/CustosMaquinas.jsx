@@ -18,6 +18,7 @@ import { loadCustosMaquinas } from "@/services/custosExcelService";
 const VERDE_ESCURO = "#2A5E20";
 const VERDE_MEDIO = "#387C2B";
 const AMARELO = "#FCDC01";
+const AMARELO_LEGENDA = "#E0B800"; // um tiquinho mais escuro
 
 const PIE_COLORS = [
   "#FFC800",
@@ -283,13 +284,15 @@ export default function CustosMaquinas({ mes = null }) {
     );
   };
 
+  // QTD FRETE CENTRALIZADO NO TOPO DA COLUNA
   const QtdFreteTopLabel = (props) => {
-    const { x, y, value } = props;
-    if (!value) return null;
+    const { x, y, width, value } = props;
+    if (!value && value !== 0) return null;
+    const cx = x + (width || 0) / 2;
     return (
       <text
-        x={x}
-        y={y - 8}
+        x={cx}
+        y={y - 6}
         textAnchor="middle"
         fontSize={11}
         fontWeight={700}
@@ -319,7 +322,7 @@ export default function CustosMaquinas({ mes = null }) {
               data={dadosGrafico01}
               barCategoryGap={35}
               barGap={-18}
-              margin={{ top: 25, right: 30, left: 20, bottom: 35 }}
+              margin={{ top: 40, right: 30, left: 20, bottom: 35 }}
             >
               <XAxis
                 dataKey="item"
@@ -337,15 +340,38 @@ export default function CustosMaquinas({ mes = null }) {
                 formatter={(value) => formatCurrency(value)}
                 cursor={{ fill: "rgba(0,0,0,0.03)" }}
               />
+              <Legend
+                verticalAlign="top"
+                align="right"
+                wrapperStyle={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: VERDE_ESCURO,
+                  paddingBottom: 4,
+                }}
+                payload={[
+                  {
+                    id: "meta-leg",
+                    value: "Meta",
+                    type: "square",
+                    color: VERDE_ESCURO,
+                  },
+                  {
+                    id: "real-leg",
+                    value: "Real",
+                    type: "square",
+                    color: AMARELO_LEGENDA,
+                  },
+                ]}
+              />
               <Bar
                 dataKey="metaNum"
-                name="Meta Frete 2026"
+                name="Meta"
                 fill={VERDE_ESCURO}
                 barSize={42}
                 radius={[4, 4, 0, 0]}
                 minPointSize={6}
               >
-                {/* label custom verde igual já estava */}
                 <LabelList
                   dataKey="metaNum"
                   content={({ x, y, value }) => {
@@ -380,7 +406,7 @@ export default function CustosMaquinas({ mes = null }) {
               </Bar>
               <Bar
                 dataKey="mediaNum"
-                name="Média (P+T)"
+                name="Real"
                 fill={AMARELO}
                 barSize={28}
                 radius={[4, 4, 0, 0]}
@@ -423,7 +449,7 @@ export default function CustosMaquinas({ mes = null }) {
         </CardContent>
       </Card>
 
-      {/* GRÁFICO 2 - CUSTO POR TIPO (labels com fundo da cor da coluna + qtd em cima) */}
+      {/* GRÁFICO 2 - CUSTO POR TIPO */}
       <Card className="shadow-sm lg:col-span-2">
         <CardHeader>
           <CardTitle
@@ -475,11 +501,25 @@ export default function CustosMaquinas({ mes = null }) {
                   color: VERDE_ESCURO,
                   paddingBottom: 10,
                 }}
+                payload={[
+                  {
+                    id: "prop-leg",
+                    value: "Próprio",
+                    type: "square",
+                    color: VERDE_MEDIO,
+                  },
+                  {
+                    id: "terc-leg",
+                    value: "Terceiro",
+                    type: "square",
+                    color: AMARELO_LEGENDA,
+                  },
+                ]}
               />
               {/* Próprio */}
               <Bar
                 dataKey="proprioNum"
-                name="Soma Próprio"
+                name="Próprio"
                 fill={VERDE_MEDIO}
                 barSize={55}
                 stackId="tipo"
@@ -490,7 +530,7 @@ export default function CustosMaquinas({ mes = null }) {
               {/* Terceiro */}
               <Bar
                 dataKey="terceiroNum"
-                name="Soma Terceiro"
+                name="Terceiro"
                 fill={AMARELO}
                 barSize={55}
                 stackId="tipo"
@@ -499,7 +539,7 @@ export default function CustosMaquinas({ mes = null }) {
               >
                 <LabelList content={TerceiroStackLabel} />
               </Bar>
-              {/* Qtd Frete – valor em cima da coluna */}
+              {/* Qtd Frete – topo centralizado */}
               <Bar
                 dataKey="qtdFreteNum"
                 name="Qtd Frete"
@@ -514,7 +554,7 @@ export default function CustosMaquinas({ mes = null }) {
         </CardContent>
       </Card>
 
-      {/* GRÁFICO 3 - CUSTO COM TERCEIROS (0–100%, estilo barra 100% empilhada) */}
+      {/* GRÁFICO 3 - CUSTO COM TERCEIROS */}
       <Card className="shadow-sm lg:col-span-1">
         <CardHeader>
           <CardTitle
@@ -529,14 +569,14 @@ export default function CustosMaquinas({ mes = null }) {
             <BarChart
               data={dadosGrafico03}
               layout="vertical"
-              barCategoryGap={20}
-              margin={{ left: 160, right: 100, top: 20, bottom: 20 }}
+              barCategoryGap={12}
+              margin={{ left: 130, right: 40, top: 20, bottom: 20 }}
             >
               <XAxis type="number" hide domain={[0, 100]} />
               <YAxis
                 dataKey="freteiro"
                 type="category"
-                width={150}
+                width={170}
                 tickLine={false}
                 axisLine={false}
                 tick={{
@@ -557,11 +597,10 @@ export default function CustosMaquinas({ mes = null }) {
                 dataKey="valorNum"
                 name="Valor Total"
                 fill={VERDE_MEDIO}
-                barSize={35}
+                barSize={38}
                 radius={[0, 6, 6, 0]}
                 minPointSize={10}
               >
-                {/* centro da barra: valor + % */}
                 <LabelList
                   content={({ x, y, width, height, index }) => {
                     const item = dadosGrafico03[index];
@@ -584,7 +623,6 @@ export default function CustosMaquinas({ mes = null }) {
                     );
                   }}
                 />
-                {/* km na ponta direita */}
                 <LabelList
                   dataKey="kmNum"
                   position="right"
